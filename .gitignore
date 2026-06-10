@@ -1,0 +1,27 @@
+# Environments and secrets
+.venv/
+.env
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.ruff_cache/
+.pytest_cache/
+.ty_cache/
+
+# Experiment artifacts (large or regenerable)
+runs/
+wandb/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+videos/
+*.mp4
+data/
+
+# Tooling
+.ipynb_checkpoints/
