@@ -59,9 +59,7 @@ The repo must always be ready to flip public with zero cleanup:
   CPU-bound; EnvPool is the throughput lever.
 - PyTorch is pinned to a CUDA build that still ships Pascal kernels. Do not bump to a
   cu128+ build (Pascal support was dropped there).
-- If `nvidia-smi` reports a driver/library version mismatch, the kernel module and
-  userspace are out of sync after a driver upgrade. Matched 535.288 userspace libs are
-  extracted at `~/.local/share/nvidia-compat-535.288/usr/lib/x86_64-linux-gnu`. The
-  Makefile prepends that path to `LD_LIBRARY_PATH` automatically when the mismatch is
-  present. After the next reboot the system loads 535.309 everywhere and the compat
-  path becomes a no-op.
+- If `nvidia-smi` reports a driver/library version mismatch after a driver package
+  upgrade, the fix is to free the GPU, then reload: `sudo rmmod nvidia_uvm nvidia_drm
+  nvidia_modeset nvidia && sudo modprobe nvidia nvidia_uvm nvidia_drm`. The DKMS
+  package `nvidia-dkms-535` keeps the module in sync with userspace.
