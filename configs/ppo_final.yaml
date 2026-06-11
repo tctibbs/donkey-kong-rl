@@ -1,0 +1,20 @@
+# Phase 4 production run: the Phase 3 winning recipe (clip transform,
+# two-screen sticky demos, BC init, aux 1.0 -> 0.15 floor over 400 updates)
+# scaled to 25M steps. Run at seeds 1, 2, 3 for the headline result.
+name: ppo_final_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: clip
+bc:
+  enabled: true
+  demo_path: data/demos_twoscreen_sticky.npz
+  epochs: 10
+  aux_coef: 1.0
+  aux_anneal_updates: 400
+  aux_coef_floor: 0.15
+checkpoint_interval_updates: 400
+track: true
