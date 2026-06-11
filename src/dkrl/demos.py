@@ -44,6 +44,10 @@ LADDER_CHAIN = [
 BARREL_SAME_FLOOR_DY = 10
 BARREL_THREAT_DX = 12
 
+RIVETS_FLOOR_BOTTOMS = (133, 105, 77, 49)
+RIVETS_LADDER_RIGHT = 117
+RIVETS_LADDER_LEFT = 41
+
 
 class ScriptedClimber:
     """Rule-based climbing policy for the barrels screen, driven by RAM."""
@@ -69,7 +73,7 @@ class ScriptedClimber:
         jumping = 0 < int(ram[RAM_JUMP]) < 255
 
         if int(ram[RAM_BOARD]) != 0:
-            return self._rivets_fallback(ram, x)
+            return self._rivets_routine(ram, x, y)
 
         target = None
         for lx, bottom, top in LADDER_CHAIN:
@@ -99,10 +103,28 @@ class ScriptedClimber:
                 return True
         return False
 
-    def _rivets_fallback(self, ram: np.ndarray, x: int) -> int:
-        """Simple survival behavior on the rivets screen (out of demo scope)."""
-        toward = RIGHT if x < 80 else LEFT
-        if self._barrel_threat(ram, x, int(ram[RAM_MARIO_Y])):
+    def _rivets_routine(self, ram: np.ndarray, x: int, y: int) -> int:
+        """Zigzag the rivets screen: sweep each floor, climb at alternate ends.
+
+        Walking a floor end to end removes its rivets (100 points each);
+        removing all rivets completes the screen for the bonus. Floors sit at
+        y 133, 105, 77, 49 with ladders at x 41, 61, 97, 117 on every floor.
+        """
+        floor_idx = None
+        for i, fy in enumerate(RIVETS_FLOOR_BOTTOMS):
+            if 0 <= fy - y <= 2 or (i == 0 and y >= fy):
+                floor_idx = i
+                break
+        if floor_idx is None:
+            return UP if y > 23 else NOOP
+
+        ladder_x = RIVETS_LADDER_RIGHT if floor_idx % 2 == 0 else RIVETS_LADDER_LEFT
+        if 0 <= x - ladder_x <= 2:
+            return UP
+        toward = RIGHT if x < ladder_x else LEFT
+        if 0 < int(ram[RAM_JUMP]) < 255:
+            return toward
+        if self._barrel_threat(ram, x, y):
             return RIGHTFIRE if toward == RIGHT else LEFTFIRE
         return toward
 
@@ -166,7 +188,6 @@ def collect_demos(
             ep_return += float(reward)
             if float(reward) >= clear_threshold:
                 cleared = True
-                break
             if terminated or truncated:
                 break
         if cleared:
