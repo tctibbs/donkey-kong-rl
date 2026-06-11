@@ -23,6 +23,7 @@ dependencies = [
     "matplotlib==3.10.1",
     "python-dotenv==1.0.1",
     "opencv-python-headless==4.11.0.86",
+    "rliable>=1.2.0",
 ]
 
 [project.scripts]
