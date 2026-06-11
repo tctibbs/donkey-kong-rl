@@ -34,6 +34,24 @@ Baselines:
   human-normalized number in the paper must state its reference explicitly;
   choosing that reference is deferred to Phase 4.
 
+"Survives screen 1" definition (added after Phase 1 evidence):
+
+- An episode "clears screen 1" if it contains a single-step raw reward of at
+  least 1,500. Rationale: the largest per-event score is the 800-point hammer
+  smash; only the screen-completion bonus (remaining timer, up to 5,000) can
+  exceed it in one step. The 1,500 threshold leaves margin over stacked
+  multi-barrel jump bonuses. Caveat: no positive example has validated the
+  detector yet; when an agent first clears, cross-check against video and
+  revise this note.
+- An agent "survives screen 1" if at least 50 percent of evaluation episodes
+  clear screen 1.
+- Measured 2026-06-10 (25 episodes each): PPO 10M baseline clear rate 0.00
+  (mean return 3,840); random policy clear rate 0.00 (mean return 120). The
+  PPO baseline scores 33x random purely by farming barrel jumps at the bottom
+  of the ramps until the bonus timer expires (confirmed visually from the
+  evaluation video). Beating the survives-screen-1 baseline is the explicit
+  Phase 2 target.
+
 ## Consequences
 
 - Scores are directly defensible against the standard ALE methodology.
