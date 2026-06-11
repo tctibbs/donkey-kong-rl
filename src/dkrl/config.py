@@ -31,7 +31,11 @@ class EnvConfig(BaseModel):
     sticky_action_prob: float = Field(default=0.25, ge=0.0, le=1.0)
     full_action_space: bool = True
     episodic_life: bool = True
-    reward_clip: bool = True
+    reward_transform: Literal["clip", "scale", "none"] = Field(
+        default="clip",
+        description="clip: EnvPool [-1,1] clipping; scale: raw times reward_scale; none: raw",
+    )
+    reward_scale: float = Field(default=0.01, gt=0.0)
     fire_reset: bool = True
     max_episode_steps: int = Field(
         default=27_000, description="Agent steps; 108k frames at skip 4"

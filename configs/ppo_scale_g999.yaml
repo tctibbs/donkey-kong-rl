@@ -1,0 +1,16 @@
+# E2: E1 plus gamma 0.999 (ADR 0003). Tests whether a longer credit horizon
+# is needed for the delayed screen-completion bonus once reward magnitudes
+# are visible to the learner.
+name: ppo_scale_g999_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+ppo:
+  gamma: 0.999
+checkpoint_interval_updates: 200
+track: true

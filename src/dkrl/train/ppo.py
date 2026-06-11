@@ -132,6 +132,8 @@ def train(cfg: ExperimentConfig) -> dict:
             logprobs[step] = logprob
 
             next_obs_np, reward, terminated, truncated, info = envs.step(action.cpu().numpy())
+            if cfg.env.reward_transform == "scale":
+                reward = reward * cfg.env.reward_scale
             rewards[step] = torch.from_numpy(reward).to(device)
             done_np = np.logical_or(terminated, truncated)
             next_obs = torch.from_numpy(next_obs_np).to(device)

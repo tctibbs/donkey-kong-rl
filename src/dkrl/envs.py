@@ -52,7 +52,7 @@ def make_train_envs(cfg: EnvConfig, seed: int) -> VectorEnv:
         frame_skip=cfg.frame_skip,
         noop_max=cfg.noop_max,
         episodic_life=cfg.episodic_life,
-        reward_clip=cfg.reward_clip,
+        reward_clip=cfg.reward_transform == "clip",
         repeat_action_probability=cfg.sticky_action_prob,
         full_action_space=cfg.full_action_space,
         use_fire_reset=cfg.fire_reset,

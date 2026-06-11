@@ -1,0 +1,14 @@
+# E1: isolate the reward-clipping pathology (ADR 0003). Identical to
+# ppo_baseline_10m except rewards are scaled (x0.01) instead of clipped, so
+# the 5,000-point screen bonus is worth 50 jumps instead of 1.
+name: ppo_scale_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+checkpoint_interval_updates: 200
+track: true
