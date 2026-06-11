@@ -1,0 +1,13 @@
+# Harness validation on a known game: CleanRL PPO reaches roughly 400 on
+# Breakout at 10M steps, so a 3M-step run must show clear learning well above
+# the random-policy level. Validates that our env wrappers, stats tracking,
+# and evaluation report sane numbers on a game with published references.
+name: breakout_validation_3m
+seed: 1
+total_timesteps: 3000000
+algo: ppo
+env:
+  env_id: Breakout-v5
+  num_envs: 64
+  num_threads: 12
+track: true
