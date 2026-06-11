@@ -48,6 +48,16 @@ def main() -> None:
     p_video.add_argument("--episodes", type=int, default=1)
     p_video.add_argument("--seed", type=int, default=7)
 
+    p_sdemos = sub.add_parser(
+        "self-demos", help="Harvest a trained agent's best episodes as demos"
+    )
+    p_sdemos.add_argument("--checkpoint", type=Path, required=True)
+    p_sdemos.add_argument("--out", type=Path, required=True)
+    p_sdemos.add_argument("--episodes", type=int, default=300)
+    p_sdemos.add_argument("--keep", type=int, default=25)
+    p_sdemos.add_argument("--seed", type=int, default=11000)
+    p_sdemos.add_argument("--merge-with", type=Path, default=None)
+
     p_demos = sub.add_parser("collect-demos", help="Collect scripted screen-1 demonstrations")
     p_demos.add_argument("--out", type=Path, default=Path("data/demos_screen1.npz"))
     p_demos.add_argument("--episodes", type=int, default=25)
@@ -112,6 +122,31 @@ def main() -> None:
         setup_logging("stats")
         result = aggregate_runs(args.name)
         logger.info(json.dumps(result, indent=2))
+
+    elif args.command == "self-demos":
+        from dkrl.demos import collect_self_demos
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("self-demos")
+        result = collect_self_demos(
+            args.checkpoint,
+            args.out,
+            episodes=args.episodes,
+            keep=args.keep,
+            seed=args.seed,
+            merge_with=args.merge_with,
+        )
+        result.update(
+            {
+                "kind": "self_demos",
+                "checkpoint": str(args.checkpoint),
+                "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
 
     elif args.command == "collect-demos":
         from dkrl.demos import collect_demos

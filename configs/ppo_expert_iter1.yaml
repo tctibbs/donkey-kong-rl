@@ -1,0 +1,25 @@
+# Expert iteration round 1 (30k push). Demos: the 25M final agent's top 30
+# of 400 episodes (returns 8,000-8,200) merged with the scripted two-screen
+# set. Scale transform so a first-ever rivets completion (+30 to +45 in one
+# step) is visible to the learner, unlike clip's +1. Regenerate demos with:
+#   uv run dkrl self-demos --checkpoint checkpoints/ppo_final_25m_s1_*/final.pt \
+#     --out data/demos_self_r1.npz --episodes 400 --keep 30 \
+#     --merge-with data/demos_twoscreen_sticky.npz
+name: ppo_expert_iter1_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+bc:
+  enabled: true
+  demo_path: data/demos_self_r1.npz
+  epochs: 10
+  aux_coef: 1.0
+  aux_anneal_updates: 400
+  aux_coef_floor: 0.15
+checkpoint_interval_updates: 400
+track: true

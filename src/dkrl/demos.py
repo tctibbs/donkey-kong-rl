@@ -222,3 +222,112 @@ def collect_demos(
         f"mean return {np.mean(kept_returns):.0f}, {out_path}"
     )
     return result
+
+
+def collect_self_demos(
+    checkpoint_path: Path,
+    out_path: Path,
+    episodes: int = 300,
+    keep: int = 25,
+    seed: int = 11000,
+    merge_with: Path | None = None,
+) -> dict:
+    """Harvest a trained agent's best episodes as a BC dataset (expert iteration).
+
+    Rolls the checkpoint's stochastic policy through the protocol eval env,
+    keeps the ``keep`` highest-return episodes out of ``episodes``, and
+    optionally concatenates an existing demo set so earlier behavior support
+    is preserved.
+
+    Args:
+        checkpoint_path: Trained checkpoint to roll out.
+        out_path: Output ``.npz`` path.
+        episodes: Total episodes to sample.
+        keep: Number of top episodes to keep.
+        seed: Eval pool seed (also seeds policy sampling).
+        merge_with: Optional existing demo ``.npz`` to concatenate.
+
+    Returns:
+        Dict with kept-episode returns and dataset sizes.
+    """
+    import torch
+
+    from dkrl.config import ExperimentConfig
+    from dkrl.envs import make_eval_envs
+    from dkrl.evaluate import load_policy
+
+    ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    cfg = ExperimentConfig.model_validate(ckpt["config"])
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    policy = load_policy(ckpt, cfg, device)
+    torch.manual_seed(seed)
+    envs = make_eval_envs(
+        cfg.eval,
+        cfg.env.env_id,
+        cfg.env.img_size,
+        cfg.env.frame_stack,
+        seed,
+        full_action_space=cfg.env.full_action_space,
+    )
+    n = cfg.eval.num_envs
+
+    buf_obs: list[list[np.ndarray]] = [[] for _ in range(n)]
+    buf_act: list[list[int]] = [[] for _ in range(n)]
+    returns_acc = np.zeros(n, dtype=np.float64)
+    kept: list[tuple[float, np.ndarray, np.ndarray]] = []
+    done_eps = 0
+
+    obs, _ = envs.reset()
+    while done_eps < episodes:
+        actions = policy(torch.from_numpy(obs).to(device)).cpu().numpy()
+        for i in range(n):
+            buf_obs[i].append(obs[i].astype(np.uint8))
+            buf_act[i].append(int(actions[i]))
+        obs, _, terminated, truncated, info = envs.step(actions)
+        returns_acc += info["reward"]
+        real_done = np.logical_or(info.get("terminated", terminated), truncated)
+        for i in np.nonzero(real_done)[0]:
+            done_eps += 1
+            ep_return = float(returns_acc[i])
+            worst_kept = kept[0][0] if len(kept) >= keep else None
+            if worst_kept is None or ep_return > worst_kept:
+                kept.append((ep_return, np.stack(buf_obs[i]), np.asarray(buf_act[i], np.int64)))
+                kept.sort(key=lambda e: e[0])
+                if len(kept) > keep:
+                    kept.pop(0)
+            returns_acc[i] = 0.0
+            buf_obs[i] = []
+            buf_act[i] = []
+            if done_eps % 50 == 0:
+                floor = kept[0][0] if kept else float("nan")
+                logger.info(f"self-demos: {done_eps}/{episodes} episodes, kept floor {floor:.0f}")
+    envs.close()
+
+    obs_arrays = [e[1] for e in kept]
+    act_arrays = [e[2] for e in kept]
+    kept_returns = [e[0] for e in kept]
+    if merge_with is not None:
+        prior = np.load(merge_with)
+        obs_arrays.append(prior["observations"])
+        act_arrays.append(prior["actions"])
+    observations = np.concatenate(obs_arrays)
+    actions_all = np.concatenate(act_arrays)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(out_path, observations=observations, actions=actions_all)
+    result = {
+        "episodes_sampled": episodes,
+        "episodes_kept": len(kept),
+        "kept_return_min": float(min(kept_returns)),
+        "kept_return_mean": float(np.mean(kept_returns)),
+        "kept_return_max": float(max(kept_returns)),
+        "samples": int(len(actions_all)),
+        "merged_with": str(merge_with) if merge_with else None,
+        "path": str(out_path),
+    }
+    logger.info(
+        f"self-demos saved: kept {len(kept)} of {episodes}, returns "
+        f"{result['kept_return_min']:.0f}..{result['kept_return_max']:.0f} "
+        f"(mean {result['kept_return_mean']:.0f}), {result['samples']} samples, {out_path}"
+    )
+    return result
