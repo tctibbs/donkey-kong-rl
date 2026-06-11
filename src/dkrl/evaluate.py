@@ -12,17 +12,23 @@ from dkrl.config import EvalConfig, ExperimentConfig
 from dkrl.envs import EpisodeStats, VectorEnv, make_eval_envs
 
 
-def summarize(returns: list[float], lengths: list[int]) -> dict:
-    """Compute summary statistics over per-episode returns.
+def summarize(
+    returns: list[float], lengths: list[int], max_step_rewards: list[float], clear_threshold: float
+) -> dict:
+    """Compute summary statistics over per-episode results.
 
     Args:
         returns: Raw episode returns.
         lengths: Episode lengths in agent steps.
+        max_step_rewards: Max single-step raw reward per episode.
+        clear_threshold: Single-step reward marking a screen clear (ADR 0002).
 
     Returns:
-        Dict with episode count, mean, std, median, min, max, and mean length.
+        Dict with episode count, return stats, mean length, and the
+        screen-clear rate.
     """
     arr = np.asarray(returns, dtype=np.float64)
+    clears = sum(1 for m in max_step_rewards if m >= clear_threshold)
     return {
         "episodes": len(returns),
         "return_mean": float(arr.mean()),
@@ -31,7 +37,10 @@ def summarize(returns: list[float], lengths: list[int]) -> dict:
         "return_min": float(arr.min()),
         "return_max": float(arr.max()),
         "length_mean": float(np.mean(lengths)),
+        "clear_rate": clears / len(returns),
+        "clear_reward_threshold": clear_threshold,
         "returns": [float(r) for r in returns],
+        "max_step_rewards": [float(m) for m in max_step_rewards],
     }
 
 
@@ -40,7 +49,7 @@ def _rollout_episodes(
     num_envs: int,
     episodes: int,
     act: Callable[[np.ndarray], np.ndarray],
-) -> tuple[list[float], list[int]]:
+) -> tuple[list[float], list[int], list[float]]:
     """Step vectorized envs until `episodes` episodes complete.
 
     Args:
@@ -50,19 +59,22 @@ def _rollout_episodes(
         act: Callable mapping a batch of observations to a batch of actions.
 
     Returns:
-        Tuple of (returns, lengths) lists, truncated to `episodes` entries.
+        Tuple of (returns, lengths, max_step_rewards) lists, truncated to
+        `episodes` entries.
     """
     stats = EpisodeStats(num_envs)
     returns: list[float] = []
     lengths: list[int] = []
+    max_steps: list[float] = []
     obs, _ = envs.reset()
     while len(returns) < episodes:
         actions = act(obs)
         obs, _, terminated, truncated, info = envs.step(actions)
-        for ep_return, ep_length in stats.update(terminated, truncated, info):
+        for ep_return, ep_length, ep_max in stats.update(terminated, truncated, info):
             returns.append(ep_return)
             lengths.append(ep_length)
-    return returns[:episodes], lengths[:episodes]
+            max_steps.append(ep_max)
+    return returns[:episodes], lengths[:episodes], max_steps[:episodes]
 
 
 def evaluate_checkpoint(
@@ -98,6 +110,7 @@ def evaluate_checkpoint(
     agent = PPOAgent(ckpt["n_actions"], cfg.env.frame_stack).to(device)
     agent.load_state_dict(ckpt["model_state_dict"])
     agent.eval()
+    torch.manual_seed(eval_seed)
 
     envs = make_eval_envs(
         eval_cfg, cfg.env.env_id, cfg.env.img_size, cfg.env.frame_stack, eval_seed
@@ -109,10 +122,10 @@ def evaluate_checkpoint(
         return action.cpu().numpy()
 
     logger.info(f"evaluating {checkpoint_path} for {n_episodes} episodes (seed={eval_seed})")
-    returns, lengths = _rollout_episodes(envs, eval_cfg.num_envs, n_episodes, act)
+    returns, lengths, max_steps = _rollout_episodes(envs, eval_cfg.num_envs, n_episodes, act)
     envs.close()
 
-    result = summarize(returns, lengths)
+    result = summarize(returns, lengths, max_steps, eval_cfg.clear_reward_threshold)
     result.update(
         {
             "kind": "eval",
@@ -126,7 +139,8 @@ def evaluate_checkpoint(
     )
     logger.info(
         f"eval done: mean={result['return_mean']:.1f} std={result['return_std']:.1f} "
-        f"median={result['return_median']:.1f} max={result['return_max']:.0f}"
+        f"median={result['return_median']:.1f} max={result['return_max']:.0f} "
+        f"clear_rate={result['clear_rate']:.2f}"
     )
     return result
 
@@ -158,10 +172,10 @@ def random_baseline(
         return rng.integers(0, n_actions, size=eval_cfg.num_envs)
 
     logger.info(f"random baseline on {env_id}: {n_episodes} episodes (seed={eval_seed})")
-    returns, lengths = _rollout_episodes(envs, eval_cfg.num_envs, n_episodes, act)
+    returns, lengths, max_steps = _rollout_episodes(envs, eval_cfg.num_envs, n_episodes, act)
     envs.close()
 
-    result = summarize(returns, lengths)
+    result = summarize(returns, lengths, max_steps, eval_cfg.clear_reward_threshold)
     result.update(
         {
             "kind": "random_baseline",
@@ -172,6 +186,6 @@ def random_baseline(
     )
     logger.info(
         f"random baseline: mean={result['return_mean']:.1f} std={result['return_std']:.1f} "
-        f"max={result['return_max']:.0f}"
+        f"max={result['return_max']:.0f} clear_rate={result['clear_rate']:.2f}"
     )
     return result

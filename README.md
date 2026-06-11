@@ -11,8 +11,11 @@ ledger, learning curves, evaluation videos, experiment journal).
 
 ## Status
 
-Phase 0 (pipeline) in progress. No trained results yet. This section is updated as
-results land.
+- Phase 0 (pipeline) complete: end-to-end training, evaluation, ledger, and CI are
+  green (tag `v0.1.0-pipeline`).
+- Random-policy baseline measured under the locked protocol: mean 122.0 over 100
+  episodes (`results/ledger.jsonl`, kind `random_baseline`).
+- Phase 1 (PPO baseline at 10M steps) in progress.
 
 ## Hardware target
 

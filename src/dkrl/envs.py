@@ -52,7 +52,7 @@ def make_train_envs(cfg: EnvConfig, seed: int) -> VectorEnv:
         frame_skip=cfg.frame_skip,
         noop_max=cfg.noop_max,
         episodic_life=cfg.episodic_life,
-        reward_clip=cfg.reward_clip,
+        reward_clip=cfg.reward_transform == "clip",
         repeat_action_probability=cfg.sticky_action_prob,
         full_action_space=cfg.full_action_space,
         use_fire_reset=cfg.fire_reset,
@@ -108,13 +108,14 @@ class EpisodeStats:
         """Initialize accumulators for ``num_envs`` parallel environments."""
         self.returns = np.zeros(num_envs, dtype=np.float64)
         self.lengths = np.zeros(num_envs, dtype=np.int64)
+        self.max_step_rewards = np.zeros(num_envs, dtype=np.float64)
 
     def update(
         self,
         terminated: np.ndarray,
         truncated: np.ndarray,
         info: dict,
-    ) -> list[tuple[float, int]]:
+    ) -> list[tuple[float, int, float]]:
         """Accumulate one vectorized step and return completed episodes.
 
         Args:
@@ -123,15 +124,19 @@ class EpisodeStats:
             info: EnvPool info dict containing ``reward`` and ``terminated``.
 
         Returns:
-            List of ``(episode_return, episode_length)`` for episodes that
-            really ended this step.
+            List of ``(episode_return, episode_length, max_step_reward)`` for
+            episodes that really ended this step. The max single-step raw
+            reward drives the screen-clear detector (ADR 0002).
         """
         self.returns += info["reward"]
         self.lengths += 1
+        self.max_step_rewards = np.maximum(self.max_step_rewards, info["reward"])
         real_done = np.logical_or(info.get("terminated", terminated), truncated)
         completed = [
-            (float(self.returns[i]), int(self.lengths[i])) for i in np.nonzero(real_done)[0]
+            (float(self.returns[i]), int(self.lengths[i]), float(self.max_step_rewards[i]))
+            for i in np.nonzero(real_done)[0]
         ]
         self.returns[real_done] = 0.0
         self.lengths[real_done] = 0
+        self.max_step_rewards[real_done] = 0.0
         return completed
