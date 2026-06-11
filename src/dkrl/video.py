@@ -25,7 +25,7 @@ gym.register_envs(ale_py)
 class VideoWriter(Protocol):
     """Minimal protocol for an imageio frame writer."""
 
-    def append_data(self, frame: np.ndarray) -> None:
+    def append_data(self, frame: np.ndarray, /) -> None:
         """Append one RGB frame."""
         ...
 
@@ -46,13 +46,13 @@ class FrameSink(gym.Wrapper):
     def step(self, action: int) -> tuple:
         """Step the env and record the rendered frame."""
         out = self.env.step(action)
-        self.writer.append_data(self.env.render())
+        self.writer.append_data(np.asarray(self.env.render()))
         return out
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple:
         """Reset the env and record the first frame."""
         out = self.env.reset(seed=seed, options=options)
-        self.writer.append_data(self.env.render())
+        self.writer.append_data(np.asarray(self.env.render()))
         return out
 
 
