@@ -8,8 +8,38 @@ import torch
 from loguru import logger
 
 from dkrl.agents.ppo import PPOAgent
+from dkrl.agents.ppo_rnd import PPORNDAgent
 from dkrl.config import EvalConfig, ExperimentConfig
 from dkrl.envs import EpisodeStats, VectorEnv, make_eval_envs
+
+
+def load_policy(
+    ckpt: dict, cfg: ExperimentConfig, device: torch.device
+) -> Callable[[torch.Tensor], torch.Tensor]:
+    """Build the checkpoint's agent and return a batched sampling policy.
+
+    Args:
+        ckpt: Loaded checkpoint dict with model weights and metadata.
+        cfg: The experiment config stored in the checkpoint.
+        device: Device for inference.
+
+    Returns:
+        Callable mapping a uint8 observation tensor to sampled actions.
+    """
+    if cfg.algo == "ppo_rnd":
+        agent: PPOAgent | PPORNDAgent = PPORNDAgent(ckpt["n_actions"], cfg.env.frame_stack)
+    else:
+        agent = PPOAgent(ckpt["n_actions"], cfg.env.frame_stack)
+    agent = agent.to(device)
+    agent.load_state_dict(ckpt["model_state_dict"])
+    agent.eval()
+
+    def policy(x: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            out = agent.get_action_and_value(x)
+        return out[0]
+
+    return policy
 
 
 def summarize(
@@ -107,9 +137,7 @@ def evaluate_checkpoint(
     device = torch.device(
         device_str if device_str else ("cuda" if torch.cuda.is_available() else "cpu")
     )
-    agent = PPOAgent(ckpt["n_actions"], cfg.env.frame_stack).to(device)
-    agent.load_state_dict(ckpt["model_state_dict"])
-    agent.eval()
+    policy = load_policy(ckpt, cfg, device)
     torch.manual_seed(eval_seed)
 
     envs = make_eval_envs(
@@ -117,9 +145,7 @@ def evaluate_checkpoint(
     )
 
     def act(obs: np.ndarray) -> np.ndarray:
-        with torch.no_grad():
-            action, _, _, _ = agent.get_action_and_value(torch.from_numpy(obs).to(device))
-        return action.cpu().numpy()
+        return policy(torch.from_numpy(obs).to(device)).cpu().numpy()
 
     logger.info(f"evaluating {checkpoint_path} for {n_episodes} episodes (seed={eval_seed})")
     returns, lengths, max_steps = _rollout_episodes(envs, eval_cfg.num_envs, n_episodes, act)

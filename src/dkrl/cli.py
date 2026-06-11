@@ -48,8 +48,6 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "train":
-        from dkrl.train.ppo import train
-
         cfg = ExperimentConfig.from_yaml(args.config)
         if args.seed is not None:
             cfg = cfg.model_copy(update={"seed": args.seed})
@@ -57,6 +55,10 @@ def main() -> None:
             cfg = cfg.model_copy(update={"total_timesteps": args.total_timesteps})
         if args.no_track:
             cfg = cfg.model_copy(update={"track": False})
+        if cfg.algo == "ppo_rnd":
+            from dkrl.train.ppo_rnd import train_rnd as train
+        else:
+            from dkrl.train.ppo import train
         row = train(cfg)
         append_row(row)
 
