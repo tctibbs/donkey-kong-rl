@@ -1,0 +1,12 @@
+# Phase 1 PPO baseline: CleanRL ppo_atari_envpool hyperparameters at 10M steps
+# (40M frames), Machado-consistent training stochasticity (sticky actions,
+# full action set).
+name: ppo_baseline_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+checkpoint_interval_updates: 200
+track: true

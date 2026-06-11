@@ -1,0 +1,58 @@
+[project]
+name = "dkrl"
+version = "0.1.0"
+description = "Single-GPU reinforcement learning study of Atari Donkey Kong"
+readme = "README.md"
+authors = [
+    { name = "Tristan Tibbs", email = "tristantibbs@gmail.com" }
+]
+license = "MIT"
+requires-python = "==3.11.*"
+dependencies = [
+    "torch==2.5.1",
+    "envpool==0.8.4",
+    "numpy==1.26.4",
+    "pydantic==2.10.6",
+    "loguru==0.7.3",
+    "pyyaml==6.0.2",
+    "wandb==0.19.8",
+    "tensorboard==2.19.0",
+    "ale-py==0.10.2",
+    "gymnasium==1.0.0",
+    "imageio[ffmpeg]==2.37.0",
+    "matplotlib==3.10.1",
+    "python-dotenv==1.0.1",
+]
+
+[project.scripts]
+dkrl = "dkrl.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff==0.11.6",
+    "ty==0.0.48",
+    "pytest==8.3.5",
+    "pre-commit==4.2.0",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.ruff]
+line-length = 99
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "BLE", "B", "A", "ICN", "Q", "ANN", "UP", "C4", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"

@@ -1,0 +1,114 @@
+"""Pydantic v2 configuration schemas for all experiments.
+
+Every meaningful hyperparameter and design choice is a typed field here so it
+can be ablated one variable at a time. Configs load from YAML, serialize back
+to YAML, and hash deterministically so every run is traceable.
+"""
+
+import hashlib
+from pathlib import Path
+from typing import Literal
+
+import yaml
+from pydantic import BaseModel, Field
+
+
+class EnvConfig(BaseModel):
+    """EnvPool Atari environment construction parameters.
+
+    Defaults follow the Machado et al. (2018) ALE recommendations where they
+    apply to training: sticky actions and the full action set. Episodic life
+    and reward clipping are training conveniences and are ablatable.
+    """
+
+    env_id: str = "DonkeyKong-v5"
+    num_envs: int = Field(default=64, ge=1)
+    num_threads: int = Field(default=12, ge=0, description="0 lets EnvPool pick")
+    img_size: int = 84
+    frame_stack: int = 4
+    frame_skip: int = 4
+    noop_max: int = 30
+    sticky_action_prob: float = Field(default=0.25, ge=0.0, le=1.0)
+    full_action_space: bool = True
+    episodic_life: bool = True
+    reward_clip: bool = True
+    fire_reset: bool = True
+    max_episode_steps: int = Field(
+        default=27_000, description="Agent steps; 108k frames at skip 4"
+    )
+
+
+class PPOConfig(BaseModel):
+    """PPO hyperparameters, following CleanRL ppo_atari_envpool defaults."""
+
+    learning_rate: float = 2.5e-4
+    anneal_lr: bool = True
+    num_steps: int = Field(default=128, description="Rollout length per env per update")
+    gamma: float = 0.99
+    gae_lambda: float = 0.95
+    num_minibatches: int = 4
+    update_epochs: int = 4
+    norm_adv: bool = True
+    clip_coef: float = 0.1
+    clip_vloss: bool = True
+    ent_coef: float = 0.01
+    vf_coef: float = 0.5
+    max_grad_norm: float = 0.5
+    target_kl: float | None = None
+
+
+class EvalConfig(BaseModel):
+    """Evaluation protocol, locked to the Machado et al. recommendations.
+
+    Sticky actions p=0.25, full action set, 108k-frame cap, no-op starts,
+    no episodic-life trick, raw (unclipped) rewards.
+    """
+
+    episodes: int = 100
+    num_envs: int = 25
+    sticky_action_prob: float = 0.25
+    full_action_space: bool = True
+    noop_max: int = 30
+    max_episode_steps: int = 27_000
+    seed: int = 1000
+
+
+class ExperimentConfig(BaseModel):
+    """Root config for a training run."""
+
+    name: str
+    seed: int = 1
+    total_timesteps: int = 10_000_000
+    algo: Literal["ppo"] = "ppo"
+    env: EnvConfig = EnvConfig()
+    ppo: PPOConfig = PPOConfig()
+    eval: EvalConfig = EvalConfig()
+    cuda: bool = True
+    torch_deterministic: bool = True
+    track: bool = True
+    wandb_project: str = "donkey-kong-rl"
+    wandb_entity: str | None = None
+    checkpoint_interval_updates: int = Field(default=0, description="0 disables periodic saves")
+
+    @property
+    def config_hash(self) -> str:
+        """Deterministic 12-hex-char hash of the config.
+
+        Excludes `name` and `seed` so that multi-seed runs of the same
+        experiment share a hash and group together in the ledger.
+        """
+        payload = self.model_dump_json(exclude={"name", "seed"})
+        return hashlib.sha256(payload.encode()).hexdigest()[:12]
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> "ExperimentConfig":
+        """Load and validate a config from a YAML file."""
+        with path.open() as f:
+            data = yaml.safe_load(f)
+        return cls.model_validate(data)
+
+    def to_yaml(self, path: Path) -> None:
+        """Serialize the config to a YAML file."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w") as f:
+            yaml.safe_dump(self.model_dump(mode="json"), f, sort_keys=False)
