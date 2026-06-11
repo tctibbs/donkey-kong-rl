@@ -1,10 +1,11 @@
-"""Command-line entry point: train, evaluate, random-baseline, plot."""
+"""Command-line entry point: train, evaluate, random-baseline, plot, video."""
 
 import argparse
 from datetime import UTC, datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
+from loguru import logger
 
 from dkrl.config import EvalConfig, ExperimentConfig
 from dkrl.ledger import append_row
@@ -37,6 +38,12 @@ def main() -> None:
     p_plot = sub.add_parser("plot", help="Plot learning curves from metrics CSVs")
     p_plot.add_argument("metrics", type=Path, nargs="+")
     p_plot.add_argument("--out", type=Path, default=Path("results/plots/learning_curves.png"))
+
+    p_video = sub.add_parser("video", help="Record an MP4 of a checkpoint playing")
+    p_video.add_argument("--checkpoint", type=Path, required=True)
+    p_video.add_argument("--out", type=Path, required=True)
+    p_video.add_argument("--episodes", type=int, default=1)
+    p_video.add_argument("--seed", type=int, default=7)
 
     args = parser.parse_args()
 
@@ -78,7 +85,16 @@ def main() -> None:
         append_row(result)
 
     elif args.command == "plot":
+        from dkrl.log import setup_logging
         from dkrl.plots import plot_learning_curves
 
+        setup_logging("plot")
         out = plot_learning_curves(args.metrics, args.out)
-        print(out)
+        logger.info(f"plot written to {out}")
+
+    elif args.command == "video":
+        from dkrl.log import setup_logging
+        from dkrl.video import record_video
+
+        setup_logging("video")
+        record_video(args.checkpoint, args.out, episodes=args.episodes, seed=args.seed)
