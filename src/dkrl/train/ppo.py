@@ -70,6 +70,15 @@ def train(cfg: ExperimentConfig) -> dict:
         from dkrl.bc import pretrain_bc
 
         bc_stats = pretrain_bc(agent, cfg.bc, device)
+    demo_obs = demo_actions = None
+    if cfg.bc.enabled and cfg.bc.aux_coef > 0:
+        demo_data = np.load(cfg.bc.demo_path)
+        demo_obs = torch.from_numpy(demo_data["observations"])
+        demo_actions = torch.from_numpy(demo_data["actions"])
+        logger.info(
+            f"bc auxiliary loss active: coef={cfg.bc.aux_coef} over "
+            f"{cfg.bc.aux_anneal_updates} updates, {len(demo_actions)} demo samples"
+        )
     optimizer = optim.Adam(agent.parameters(), lr=cfg.ppo.learning_rate, eps=1e-5)
 
     num_envs = cfg.env.num_envs
@@ -226,6 +235,17 @@ def train(cfg: ExperimentConfig) -> dict:
 
                 entropy_loss = entropy.mean()
                 loss = pg_loss - cfg.ppo.ent_coef * entropy_loss + v_loss * cfg.ppo.vf_coef
+                if demo_obs is not None and demo_actions is not None:
+                    aux_now = cfg.bc.aux_coef * max(
+                        0.0, 1.0 - (update - 1) / cfg.bc.aux_anneal_updates
+                    )
+                    if aux_now > 0:
+                        idx = torch.randint(0, len(demo_actions), (cfg.bc.batch_size,))
+                        d_obs = demo_obs[idx].to(device)
+                        d_act = demo_actions[idx].to(device)
+                        d_logits = agent.actor(agent.network(d_obs.float() / 255.0))
+                        bc_aux_loss = torch.nn.functional.cross_entropy(d_logits, d_act)
+                        loss = loss + aux_now * bc_aux_loss
 
                 optimizer.zero_grad()
                 loss.backward()

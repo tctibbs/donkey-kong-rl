@@ -113,13 +113,15 @@ def collect_demos(
     seed: int = 7000,
     max_steps: int = 4000,
     clear_threshold: float = 1500.0,
+    sticky_action_prob: float = 0.0,
 ) -> dict:
     """Collect successful scripted episodes as a BC dataset.
 
     The env matches training observations (grayscale 84x84, frame skip 4,
-    stack 4, full action set) but runs without sticky actions so the script
-    executes reliably. Only episodes that clear the barrels screen (single
-    step raw reward at or above ``clear_threshold``) are kept.
+    stack 4, full action set). Only episodes that clear the barrels screen
+    (single step raw reward at or above ``clear_threshold``) are kept. The
+    closed-loop script tolerates sticky actions (about 12/15 clears at 0.25),
+    so demos can be collected distribution-matched to training.
 
     Args:
         out_path: Output ``.npz`` path for observations and actions.
@@ -127,6 +129,7 @@ def collect_demos(
         seed: Base env seed; incremented per attempt.
         max_steps: Per-episode step cap.
         clear_threshold: Single-step reward marking a screen clear (ADR 0002).
+        sticky_action_prob: Sticky-action probability during collection.
 
     Returns:
         Dict with attempts, successes, returns, and dataset sizes.
@@ -134,7 +137,7 @@ def collect_demos(
     base = gym.make(
         "ALE/DonkeyKong-v5",
         frameskip=1,
-        repeat_action_probability=0.0,
+        repeat_action_probability=sticky_action_prob,
         full_action_space=True,
     )
     env = AtariPreprocessing(base, noop_max=30, frame_skip=4, screen_size=84, grayscale_obs=True)

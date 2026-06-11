@@ -49,6 +49,7 @@ def main() -> None:
     p_demos.add_argument("--out", type=Path, default=Path("data/demos_screen1.npz"))
     p_demos.add_argument("--episodes", type=int, default=25)
     p_demos.add_argument("--seed", type=int, default=7000)
+    p_demos.add_argument("--sticky", type=float, default=0.0)
 
     args = parser.parse_args()
 
@@ -105,7 +106,10 @@ def main() -> None:
         from dkrl.log import setup_logging
 
         setup_logging("collect-demos")
-        result = collect_demos(args.out, episodes=args.episodes, seed=args.seed)
+        result = collect_demos(
+            args.out, episodes=args.episodes, seed=args.seed, sticky_action_prob=args.sticky
+        )
+        result["sticky_action_prob"] = args.sticky
         result.update(
             {
                 "kind": "demos",

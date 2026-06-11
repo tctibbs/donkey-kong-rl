@@ -88,6 +88,14 @@ class BCConfig(BaseModel):
     epochs: int = Field(default=10, ge=1)
     batch_size: int = Field(default=512, ge=1)
     learning_rate: float = 2.5e-4
+    aux_coef: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Kickstarting: BC cross-entropy added to the PPO loss; 0 disables",
+    )
+    aux_anneal_updates: int = Field(
+        default=300, ge=1, description="Updates over which aux_coef anneals linearly to 0"
+    )
 
 
 class EvalConfig(BaseModel):
