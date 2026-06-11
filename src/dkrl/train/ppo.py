@@ -236,8 +236,10 @@ def train(cfg: ExperimentConfig) -> dict:
                 entropy_loss = entropy.mean()
                 loss = pg_loss - cfg.ppo.ent_coef * entropy_loss + v_loss * cfg.ppo.vf_coef
                 if demo_obs is not None and demo_actions is not None:
-                    aux_now = cfg.bc.aux_coef * max(
-                        0.0, 1.0 - (update - 1) / cfg.bc.aux_anneal_updates
+                    frac_left = max(0.0, 1.0 - (update - 1) / cfg.bc.aux_anneal_updates)
+                    aux_now = (
+                        cfg.bc.aux_coef_floor
+                        + (cfg.bc.aux_coef - cfg.bc.aux_coef_floor) * frac_left
                     )
                     if aux_now > 0:
                         idx = torch.randint(0, len(demo_actions), (cfg.bc.batch_size,))

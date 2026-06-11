@@ -94,7 +94,12 @@ class BCConfig(BaseModel):
         description="Kickstarting: BC cross-entropy added to the PPO loss; 0 disables",
     )
     aux_anneal_updates: int = Field(
-        default=300, ge=1, description="Updates over which aux_coef anneals linearly to 0"
+        default=300, ge=1, description="Updates over which aux_coef anneals linearly to the floor"
+    )
+    aux_coef_floor: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Permanent BC pressure after annealing; keeps clears from washing out",
     )
 
 
