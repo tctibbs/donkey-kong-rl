@@ -85,7 +85,7 @@ class BCConfig(BaseModel):
 
     enabled: bool = False
     demo_path: str = "data/demos_screen1.npz"
-    epochs: int = Field(default=10, ge=1)
+    epochs: int = Field(default=10, ge=0, description="0 skips pretraining (aux loss only)")
     batch_size: int = Field(default=512, ge=1)
     learning_rate: float = 2.5e-4
     aux_coef: float = Field(
