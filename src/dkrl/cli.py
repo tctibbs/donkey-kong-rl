@@ -39,6 +39,9 @@ def main() -> None:
     p_plot.add_argument("metrics", type=Path, nargs="+")
     p_plot.add_argument("--out", type=Path, default=Path("results/plots/learning_curves.png"))
 
+    p_stats = sub.add_parser("stats", help="Aggregate eval rows (IQM, bootstrap CIs)")
+    p_stats.add_argument("--name", type=str, required=True, help="Run-id prefix to aggregate")
+
     p_video = sub.add_parser("video", help="Record an MP4 of a checkpoint playing")
     p_video.add_argument("--checkpoint", type=Path, required=True)
     p_video.add_argument("--out", type=Path, required=True)
@@ -99,6 +102,16 @@ def main() -> None:
         setup_logging("plot")
         out = plot_learning_curves(args.metrics, args.out)
         logger.info(f"plot written to {out}")
+
+    elif args.command == "stats":
+        import json
+
+        from dkrl.log import setup_logging
+        from dkrl.stats import aggregate_runs
+
+        setup_logging("stats")
+        result = aggregate_runs(args.name)
+        logger.info(json.dumps(result, indent=2))
 
     elif args.command == "collect-demos":
         from dkrl.demos import collect_demos
