@@ -21,7 +21,15 @@ ledger, learning curves, evaluation videos, experiment journal).
   kickstarting: BC warm-start plus an annealed-to-a-floor BC auxiliary loss with
   two-screen demos. Best agent: mean 5,269, median 5,500, 93 percent screen-1
   clear rate over 100 protocol episodes.
-- Phase 3 (ablations and sweeps on the winning recipe) starting.
+- Phase 3 (ablations): the BC pressure floor is the load-bearing component
+  (removing it collapses clearing to zero; inverted-U dose response peaking at
+  0.15); the reward transform is irrelevant once behavior is demonstrated
+  (clip vs scale within seed noise across 3 seeds each).
+- Phase 4 (final agent): the production recipe at 25M steps, 3 seeds, pooled
+  over 300 protocol episodes: mean 6,884 (95 percent CI 6,724 to 7,027), IQM
+  7,071, median 7,100, screen-1 clear rate 0.97. That is 56x random and 71
+  percent above the best no-demonstration agent. Draft methods and results:
+  `docs/paper/methods-and-results.md`.
 
 ## Hardware target
 

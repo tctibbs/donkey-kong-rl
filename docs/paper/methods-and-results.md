@@ -144,10 +144,25 @@ are not required.
 
 ### 2.5 Final agent
 
-[PENDING: 3-seed 25M-step production runs (configs/ppo_final.yaml, clip
-recipe) in flight; this section will report per-seed means and clear rates,
-pooled IQM with 95 percent bootstrap CIs from `dkrl stats`, the learning
-curves, and the evaluation video.]
+The production recipe (clip transform, two-screen demos, BC init, aux 1.0
+annealed to a 0.15 floor over 400 updates) trained for 25M steps (100M
+frames, about 88 minutes each) at seeds 1 to 3
+(ppo_final_25m_s{1,2,3}). Per-seed evaluations (100 protocol episodes
+each): means 6,991 / 6,958 / 6,702, clear rates 1.00 / 0.95 / 0.97,
+maxima 8,100 / 8,300 / 8,200.
+
+Pooled over 300 episodes (percentile bootstrap, 10,000 resamples): mean
+6,884 (95 percent CI 6,724 to 7,027), IQM 7,071 (95 percent CI 6,951 to
+7,191), median 7,100, std 1,327, clear rate 0.973. That is 56x the random
+baseline and 71 percent above the strongest no-demonstration agent (the
+farming baseline at 4,027), with the failed-climb mode nearly eliminated
+(seed 1 cleared all 100 evaluation episodes). Episode maxima above 8,000
+indicate consistent rivets-screen scoring on top of the barrels clear; full
+rivets-screen completion (a second bonus) remains the visible headroom.
+
+The 25M horizon mattered: the same recipe at 10M steps evaluated at
+5,174 (mean of seed means) with clear rate 0.86; the extra 15M steps under
+the 0.15 floor raised both score and reliability substantially.
 
 ### 2.6 Reproducibility
 
