@@ -5,7 +5,9 @@ loss with a 0.15 permanent floor, scale transform) evaluates at mean 5,269
 with a 0.93 clear rate, beating the farming baseline by 31 percent on score
 and nearly doubling the survives-screen-1 bar.
 
-## Scoreboard (all rows: 100-episode Machado-protocol evaluations, in ledger)
+## Scoreboard (100-episode Machado-protocol evaluations in the ledger, except
+E1, which is bit-identical to the baseline and shares its evaluation; see
+journal/2026-06-10-e1-reward-scale-noop.md)
 
 | arm | eval mean | clear rate | note |
 |-----|-----------|------------|------|
