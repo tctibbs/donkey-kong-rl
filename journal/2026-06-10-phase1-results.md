@@ -40,7 +40,19 @@ reward hundreds of steps away to near nothing.
 3. Raw score can MISLEAD here: a farming policy scores 4,000 while a clumsy
    climbing policy might score less. Report both score and clear rate.
 
+## Config hash caveat
+
+The reward-transform schema change (reward_clip boolean replaced by
+reward_transform plus reward_scale) changed the computed hash of the same
+logical baseline config (b84f51d8bfbe before, 82e354e23fda after). Hashes are
+only comparable within a schema version; ledger rows carry the full config
+and git SHA, so provenance is unaffected.
+
 ## Harness validation
 
-Breakout 3M-step run (same pipeline, env_id swapped) underway; result to be
-appended to this entry.
+Breakout 3M-step run (same pipeline, env_id swapped, sticky actions on):
+best return100 = 19.5, wall 602 s, run_id breakout_validation_3m_s1_20260611_021059.
+Random Breakout play scores about 1.2; CleanRL's no-sticky reference reaches
+roughly 400 at 10M steps with this curve shape passing through the tens at
+3M. The pipeline reports sane numbers on a game with published references,
+which validates the stats tracking and protocol plumbing.
