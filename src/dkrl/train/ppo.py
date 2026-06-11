@@ -65,6 +65,11 @@ def train(cfg: ExperimentConfig) -> dict:
     envs = make_train_envs(cfg.env, cfg.seed)
     n_actions = int(envs.action_space.n)
     agent = PPOAgent(n_actions, cfg.env.frame_stack).to(device)
+    bc_stats: dict = {}
+    if cfg.bc.enabled:
+        from dkrl.bc import pretrain_bc
+
+        bc_stats = pretrain_bc(agent, cfg.bc, device)
     optimizer = optim.Adam(agent.parameters(), lr=cfg.ppo.learning_rate, eps=1e-5)
 
     num_envs = cfg.env.num_envs
@@ -286,6 +291,7 @@ def train(cfg: ExperimentConfig) -> dict:
         "config": cfg.model_dump(mode="json"),
         "kind": "train",
         "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        **bc_stats,
     }
     if cfg.track:
         import wandb

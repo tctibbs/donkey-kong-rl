@@ -1,0 +1,20 @@
+# E8: behavior-cloning warm-start from scripted screen-1 demonstrations,
+# then standard PPO fine-tuning (ADR 0004). Scale transform so the screen
+# bonus magnitude survives; protocol-consistent training stochasticity
+# (sticky 0.25, full action set). Demos regenerate via
+# `uv run dkrl collect-demos` (data/ is gitignored).
+name: ppo_bc_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+bc:
+  enabled: true
+  demo_path: data/demos_screen1.npz
+  epochs: 10
+checkpoint_interval_updates: 200
+track: true

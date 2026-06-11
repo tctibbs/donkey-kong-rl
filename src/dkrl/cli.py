@@ -45,6 +45,11 @@ def main() -> None:
     p_video.add_argument("--episodes", type=int, default=1)
     p_video.add_argument("--seed", type=int, default=7)
 
+    p_demos = sub.add_parser("collect-demos", help="Collect scripted screen-1 demonstrations")
+    p_demos.add_argument("--out", type=Path, default=Path("data/demos_screen1.npz"))
+    p_demos.add_argument("--episodes", type=int, default=25)
+    p_demos.add_argument("--seed", type=int, default=7000)
+
     args = parser.parse_args()
 
     if args.command == "train":
@@ -93,6 +98,23 @@ def main() -> None:
         setup_logging("plot")
         out = plot_learning_curves(args.metrics, args.out)
         logger.info(f"plot written to {out}")
+
+    elif args.command == "collect-demos":
+        from dkrl.demos import collect_demos
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("collect-demos")
+        result = collect_demos(args.out, episodes=args.episodes, seed=args.seed)
+        result.update(
+            {
+                "kind": "demos",
+                "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
 
     elif args.command == "video":
         from dkrl.log import setup_logging

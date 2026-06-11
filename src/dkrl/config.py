@@ -80,6 +80,16 @@ class RNDConfig(BaseModel):
     )
 
 
+class BCConfig(BaseModel):
+    """Behavior-cloning warm-start from scripted demonstrations (ADR 0004)."""
+
+    enabled: bool = False
+    demo_path: str = "data/demos_screen1.npz"
+    epochs: int = Field(default=10, ge=1)
+    batch_size: int = Field(default=512, ge=1)
+    learning_rate: float = 2.5e-4
+
+
 class EvalConfig(BaseModel):
     """Evaluation protocol, locked to the Machado et al. recommendations.
 
@@ -110,6 +120,7 @@ class ExperimentConfig(BaseModel):
     env: EnvConfig = EnvConfig()
     ppo: PPOConfig = PPOConfig()
     rnd: RNDConfig = RNDConfig()
+    bc: BCConfig = BCConfig()
     eval: EvalConfig = EvalConfig()
     cuda: bool = True
     torch_deterministic: bool = True
