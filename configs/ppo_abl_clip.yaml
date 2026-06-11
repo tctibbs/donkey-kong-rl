@@ -1,0 +1,20 @@
+# E11: kickstarting with TWO-SCREEN demos and a BC pressure floor. The EV
+# analysis (journal 2026-06-11) shows clearing only beats farming when
+# post-clear play scores; these demos average 5,728 vs farming's 4,400.
+name: ppo_abl_clip_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: clip
+bc:
+  enabled: true
+  demo_path: data/demos_twoscreen_sticky.npz
+  epochs: 10
+  aux_coef: 1.0
+  aux_anneal_updates: 400
+  aux_coef_floor: 0.15
+checkpoint_interval_updates: 200
+track: true
