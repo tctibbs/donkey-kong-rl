@@ -16,8 +16,8 @@ import torch
 from gymnasium.wrappers import AtariPreprocessing, FrameStackObservation
 from loguru import logger
 
-from dkrl.agents.ppo import PPOAgent
 from dkrl.config import ExperimentConfig
+from dkrl.evaluate import load_policy
 
 gym.register_envs(ale_py)
 
@@ -80,9 +80,7 @@ def record_video(
     ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     cfg = ExperimentConfig.model_validate(ckpt["config"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    agent = PPOAgent(ckpt["n_actions"], cfg.env.frame_stack).to(device)
-    agent.load_state_dict(ckpt["model_state_dict"])
-    agent.eval()
+    policy = load_policy(ckpt, cfg, device)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     writer = imageio.get_writer(out_path, fps=60, codec="libx264", quality=7)
@@ -90,7 +88,7 @@ def record_video(
         f"ALE/{cfg.env.env_id}",
         frameskip=1,
         repeat_action_probability=cfg.eval.sticky_action_prob,
-        full_action_space=cfg.eval.full_action_space,
+        full_action_space=cfg.env.full_action_space,
         render_mode="rgb_array",
     )
     env: gym.Env = FrameSink(base, writer)
@@ -110,8 +108,7 @@ def record_video(
         ep_return, steps = 0.0, 0
         while True:
             x = torch.from_numpy(np.asarray(obs)[None]).to(device)
-            with torch.no_grad():
-                action, _, _, _ = agent.get_action_and_value(x)
+            action = policy(x)
             obs, reward, terminated, truncated, _ = env.step(int(action.item()))
             ep_return += float(reward)
             steps += 1

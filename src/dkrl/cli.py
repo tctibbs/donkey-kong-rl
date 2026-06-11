@@ -45,11 +45,15 @@ def main() -> None:
     p_video.add_argument("--episodes", type=int, default=1)
     p_video.add_argument("--seed", type=int, default=7)
 
+    p_demos = sub.add_parser("collect-demos", help="Collect scripted screen-1 demonstrations")
+    p_demos.add_argument("--out", type=Path, default=Path("data/demos_screen1.npz"))
+    p_demos.add_argument("--episodes", type=int, default=25)
+    p_demos.add_argument("--seed", type=int, default=7000)
+    p_demos.add_argument("--sticky", type=float, default=0.0)
+
     args = parser.parse_args()
 
     if args.command == "train":
-        from dkrl.train.ppo import train
-
         cfg = ExperimentConfig.from_yaml(args.config)
         if args.seed is not None:
             cfg = cfg.model_copy(update={"seed": args.seed})
@@ -57,6 +61,10 @@ def main() -> None:
             cfg = cfg.model_copy(update={"total_timesteps": args.total_timesteps})
         if args.no_track:
             cfg = cfg.model_copy(update={"track": False})
+        if cfg.algo == "ppo_rnd":
+            from dkrl.train.ppo_rnd import train_rnd as train
+        else:
+            from dkrl.train.ppo import train
         row = train(cfg)
         append_row(row)
 
@@ -91,6 +99,26 @@ def main() -> None:
         setup_logging("plot")
         out = plot_learning_curves(args.metrics, args.out)
         logger.info(f"plot written to {out}")
+
+    elif args.command == "collect-demos":
+        from dkrl.demos import collect_demos
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("collect-demos")
+        result = collect_demos(
+            args.out, episodes=args.episodes, seed=args.seed, sticky_action_prob=args.sticky
+        )
+        result["sticky_action_prob"] = args.sticky
+        result.update(
+            {
+                "kind": "demos",
+                "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
 
     elif args.command == "video":
         from dkrl.log import setup_logging

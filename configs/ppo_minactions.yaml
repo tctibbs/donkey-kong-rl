@@ -1,0 +1,16 @@
+# E6: discovery via the minimal action set (contingency plan 2026-06-11).
+# Single delta vs the scale arm: full_action_space false (18 -> minimal).
+# NOTE: evaluation of this arm must also use the minimal action set (policy
+# output dim differs); protocol deviation recorded in the ledger row.
+name: ppo_minactions_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+  full_action_space: false
+checkpoint_interval_updates: 200
+track: true

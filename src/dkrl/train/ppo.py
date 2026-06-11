@@ -65,6 +65,20 @@ def train(cfg: ExperimentConfig) -> dict:
     envs = make_train_envs(cfg.env, cfg.seed)
     n_actions = int(envs.action_space.n)
     agent = PPOAgent(n_actions, cfg.env.frame_stack).to(device)
+    bc_stats: dict = {}
+    if cfg.bc.enabled:
+        from dkrl.bc import pretrain_bc
+
+        bc_stats = pretrain_bc(agent, cfg.bc, device)
+    demo_obs = demo_actions = None
+    if cfg.bc.enabled and cfg.bc.aux_coef > 0:
+        demo_data = np.load(cfg.bc.demo_path)
+        demo_obs = torch.from_numpy(demo_data["observations"])
+        demo_actions = torch.from_numpy(demo_data["actions"])
+        logger.info(
+            f"bc auxiliary loss active: coef={cfg.bc.aux_coef} over "
+            f"{cfg.bc.aux_anneal_updates} updates, {len(demo_actions)} demo samples"
+        )
     optimizer = optim.Adam(agent.parameters(), lr=cfg.ppo.learning_rate, eps=1e-5)
 
     num_envs = cfg.env.num_envs
@@ -83,15 +97,20 @@ def train(cfg: ExperimentConfig) -> dict:
 
     stats = EpisodeStats(num_envs)
     recent_returns: deque[float] = deque(maxlen=100)
+    recent_clears: deque[float] = deque(maxlen=100)
     best_return_window = float("-inf")
     episodes_done = 0
+    clears_done = 0
+    clear_threshold = cfg.eval.clear_reward_threshold
 
     metrics_dir = Path("results/metrics")
     metrics_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = metrics_dir / f"{run_id}.csv"
     metrics_file = metrics_path.open("w", newline="")
     metrics = csv.writer(metrics_file)
-    metrics.writerow(["global_step", "time_s", "mean_return_100", "episodes", "sps"])
+    metrics.writerow(
+        ["global_step", "time_s", "mean_return_100", "episodes", "sps", "clear_rate_100"]
+    )
 
     ckpt_dir = Path("checkpoints") / run_id
     ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -139,11 +158,15 @@ def train(cfg: ExperimentConfig) -> dict:
             next_obs = torch.from_numpy(next_obs_np).to(device)
             next_done = torch.from_numpy(done_np.astype(np.float32)).to(device)
 
-            for ep_return, ep_length, _ in stats.update(terminated, truncated, info):
+            for ep_return, ep_length, ep_max in stats.update(terminated, truncated, info):
                 episodes_done += 1
+                cleared = float(ep_max >= clear_threshold)
+                clears_done += int(cleared)
                 recent_returns.append(ep_return)
+                recent_clears.append(cleared)
                 writer.add_scalar("charts/episodic_return", ep_return, global_step)
                 writer.add_scalar("charts/episodic_length", ep_length, global_step)
+                writer.add_scalar("charts/episode_cleared", cleared, global_step)
 
         with torch.no_grad():
             next_value = agent.get_value(next_obs).reshape(1, -1)
@@ -212,6 +235,19 @@ def train(cfg: ExperimentConfig) -> dict:
 
                 entropy_loss = entropy.mean()
                 loss = pg_loss - cfg.ppo.ent_coef * entropy_loss + v_loss * cfg.ppo.vf_coef
+                if demo_obs is not None and demo_actions is not None:
+                    frac_left = max(0.0, 1.0 - (update - 1) / cfg.bc.aux_anneal_updates)
+                    aux_now = (
+                        cfg.bc.aux_coef_floor
+                        + (cfg.bc.aux_coef - cfg.bc.aux_coef_floor) * frac_left
+                    )
+                    if aux_now > 0:
+                        idx = torch.randint(0, len(demo_actions), (cfg.bc.batch_size,))
+                        d_obs = demo_obs[idx].to(device)
+                        d_act = demo_actions[idx].to(device)
+                        d_logits = agent.actor(agent.network(d_obs.float() / 255.0))
+                        bc_aux_loss = torch.nn.functional.cross_entropy(d_logits, d_act)
+                        loss = loss + aux_now * bc_aux_loss
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -224,6 +260,7 @@ def train(cfg: ExperimentConfig) -> dict:
         elapsed = time.time() - start_time
         sps = int(global_step / elapsed)
         mean_return = float(np.mean(recent_returns)) if recent_returns else float("nan")
+        clear_rate_100 = float(np.mean(recent_clears)) if recent_clears else float("nan")
         if recent_returns and mean_return > best_return_window:
             best_return_window = mean_return
 
@@ -235,13 +272,17 @@ def train(cfg: ExperimentConfig) -> dict:
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", float(np.mean(clipfracs)), global_step)
         writer.add_scalar("charts/SPS", sps, global_step)
-        metrics.writerow([global_step, round(elapsed, 1), mean_return, episodes_done, sps])
+        writer.add_scalar("charts/clear_rate_100", clear_rate_100, global_step)
+        metrics.writerow(
+            [global_step, round(elapsed, 1), mean_return, episodes_done, sps, clear_rate_100]
+        )
         metrics_file.flush()
 
         if update % 10 == 0 or update == num_updates:
             logger.info(
                 f"update {update}/{num_updates} step={global_step} "
-                f"return100={mean_return:.1f} episodes={episodes_done} sps={sps}"
+                f"return100={mean_return:.1f} clear100={clear_rate_100:.2f} "
+                f"episodes={episodes_done} sps={sps}"
             )
         if cfg.checkpoint_interval_updates and update % cfg.checkpoint_interval_updates == 0:
             save_checkpoint(f"update_{update:06d}")
@@ -264,12 +305,15 @@ def train(cfg: ExperimentConfig) -> dict:
         "wall_clock_s": round(wall_clock_s, 1),
         "sps": int(global_step / wall_clock_s),
         "episodes": episodes_done,
+        "train_clears": clears_done,
+        "train_clear_rate_100_final": clear_rate_100,
         "train_return_100_final": mean_return,
         "train_return_100_best": best_return_window,
         "checkpoint": str(ckpt_dir / "final.pt"),
         "config": cfg.model_dump(mode="json"),
         "kind": "train",
         "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        **bc_stats,
     }
     if cfg.track:
         import wandb

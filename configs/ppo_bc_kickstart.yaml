@@ -1,0 +1,21 @@
+# E9: kickstarting (ADR 0004 v2, after E8 showed catastrophic forgetting).
+# Sticky-matched demos (data/demos_screen1_sticky.npz), BC warm-start, plus
+# an annealed BC auxiliary cross-entropy in the PPO loss for the first 400
+# updates so the climbing behavior survives until on-policy clears pay out.
+name: ppo_bc_kickstart_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+bc:
+  enabled: true
+  demo_path: data/demos_screen1_sticky.npz
+  epochs: 10
+  aux_coef: 1.0
+  aux_anneal_updates: 400
+checkpoint_interval_updates: 200
+track: true

@@ -61,6 +61,48 @@ class PPOConfig(BaseModel):
     target_kl: float | None = None
 
 
+class RNDConfig(BaseModel):
+    """Random Network Distillation hyperparameters (Burda et al. 2018).
+
+    Only used when ``algo`` is ``ppo_rnd``. Defaults follow CleanRL
+    ppo_rnd_envpool.
+    """
+
+    int_coef: float = 1.0
+    ext_coef: float = 2.0
+    int_gamma: float = Field(default=0.99, description="Intrinsic-return discount")
+    update_proportion: float = Field(
+        default=0.25, description="Fraction of samples for predictor loss"
+    )
+    feature_dim: int = 512
+    obs_norm_init_rollouts: int = Field(
+        default=50, description="Random-policy rollouts to warm up obs normalization"
+    )
+
+
+class BCConfig(BaseModel):
+    """Behavior-cloning warm-start from scripted demonstrations (ADR 0004)."""
+
+    enabled: bool = False
+    demo_path: str = "data/demos_screen1.npz"
+    epochs: int = Field(default=10, ge=1)
+    batch_size: int = Field(default=512, ge=1)
+    learning_rate: float = 2.5e-4
+    aux_coef: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Kickstarting: BC cross-entropy added to the PPO loss; 0 disables",
+    )
+    aux_anneal_updates: int = Field(
+        default=300, ge=1, description="Updates over which aux_coef anneals linearly to the floor"
+    )
+    aux_coef_floor: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Permanent BC pressure after annealing; keeps clears from washing out",
+    )
+
+
 class EvalConfig(BaseModel):
     """Evaluation protocol, locked to the Machado et al. recommendations.
 
@@ -87,9 +129,11 @@ class ExperimentConfig(BaseModel):
     name: str
     seed: int = 1
     total_timesteps: int = 10_000_000
-    algo: Literal["ppo"] = "ppo"
+    algo: Literal["ppo", "ppo_rnd"] = "ppo"
     env: EnvConfig = EnvConfig()
     ppo: PPOConfig = PPOConfig()
+    rnd: RNDConfig = RNDConfig()
+    bc: BCConfig = BCConfig()
     eval: EvalConfig = EvalConfig()
     cuda: bool = True
     torch_deterministic: bool = True

@@ -1,0 +1,19 @@
+# E7: all cheap discovery levers stacked (ADR 0004). No sticky actions,
+# minimal action set, ent_coef 0.05, on the scale transform. Control arm
+# while the demonstration-seeded pipeline is built: tests whether the levers
+# compose where each alone failed.
+name: ppo_combo_discovery_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+  sticky_action_prob: 0.0
+  full_action_space: false
+ppo:
+  ent_coef: 0.05
+checkpoint_interval_updates: 200
+track: true

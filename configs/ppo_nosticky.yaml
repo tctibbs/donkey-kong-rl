@@ -1,0 +1,15 @@
+# E5: discovery diagnosis, training WITHOUT sticky actions (contingency plan
+# 2026-06-11). Single delta vs the scale arm: sticky_action_prob 0.25 -> 0.0
+# for TRAINING ONLY. Evaluation stays sticky 0.25 per the locked protocol.
+name: ppo_nosticky_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+  sticky_action_prob: 0.0
+checkpoint_interval_updates: 200
+track: true
