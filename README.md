@@ -11,11 +11,17 @@ ledger, learning curves, evaluation videos, experiment journal).
 
 ## Status
 
-- Phase 0 (pipeline) complete: end-to-end training, evaluation, ledger, and CI are
-  green (tag `v0.1.0-pipeline`).
-- Random-policy baseline measured under the locked protocol: mean 122.0 over 100
-  episodes (`results/ledger.jsonl`, kind `random_baseline`).
-- Phase 1 (PPO baseline at 10M steps) in progress.
+- Phase 0 (pipeline) and Phase 1 (PPO baseline) complete (tags `v0.1.0-pipeline`,
+  `v0.2.0-ppo-baseline`).
+- Random baseline: mean 122 (100 protocol episodes). Plain PPO at 10M steps: mean
+  4,027 but a 0.00 screen-1 clear rate (it farms barrel jumps; see the journal).
+- Phase 2 complete: a systematic ladder of interventions (reward transforms, RND,
+  entropy, action sets, behavior cloning variants) shows generic exploration never
+  produces a single screen clear. The winning recipe is scripted-demonstration
+  kickstarting: BC warm-start plus an annealed-to-a-floor BC auxiliary loss with
+  two-screen demos. Best agent: mean 5,269, median 5,500, 93 percent screen-1
+  clear rate over 100 protocol episodes.
+- Phase 3 (ablations and sweeps on the winning recipe) starting.
 
 ## Hardware target
 
