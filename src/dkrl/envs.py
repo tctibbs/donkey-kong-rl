@@ -60,7 +60,12 @@ def make_train_envs(cfg: EnvConfig, seed: int) -> VectorEnv:
 
 
 def make_eval_envs(
-    cfg: EvalConfig, env_id: str, img_size: int, frame_stack: int, seed: int
+    cfg: EvalConfig,
+    env_id: str,
+    img_size: int,
+    frame_stack: int,
+    seed: int,
+    full_action_space: bool | None = None,
 ) -> VectorEnv:
     """Build the evaluation environment under the Machado et al. protocol.
 
@@ -73,10 +78,16 @@ def make_eval_envs(
         img_size: Observation height and width, matching training.
         frame_stack: Number of stacked frames, matching training.
         seed: Base seed for the pool.
+        full_action_space: Override for the action set. A policy trained on
+            the minimal set must be evaluated on it (action indices map to
+            different buttons in each set); such a run is a recorded protocol
+            deviation. ``None`` uses the protocol default from ``cfg``.
 
     Returns:
         An EnvPool gymnasium-API vectorized environment.
     """
+    if full_action_space is None:
+        full_action_space = cfg.full_action_space
     return envpool.make(
         env_id,
         env_type="gymnasium",
@@ -90,7 +101,7 @@ def make_eval_envs(
         episodic_life=False,
         reward_clip=False,
         repeat_action_probability=cfg.sticky_action_prob,
-        full_action_space=cfg.full_action_space,
+        full_action_space=full_action_space,
     )
 
 

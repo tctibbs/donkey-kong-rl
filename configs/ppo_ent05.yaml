@@ -1,0 +1,15 @@
+# E4: discovery via higher action entropy (contingency plan 2026-06-11).
+# Single delta vs the scale arm: ent_coef 0.01 -> 0.05.
+name: ppo_ent05_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+ppo:
+  ent_coef: 0.05
+checkpoint_interval_updates: 200
+track: true

@@ -88,7 +88,7 @@ def record_video(
         f"ALE/{cfg.env.env_id}",
         frameskip=1,
         repeat_action_probability=cfg.eval.sticky_action_prob,
-        full_action_space=cfg.eval.full_action_space,
+        full_action_space=cfg.env.full_action_space,
         render_mode="rgb_array",
     )
     env: gym.Env = FrameSink(base, writer)

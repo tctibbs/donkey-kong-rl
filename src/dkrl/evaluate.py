@@ -141,7 +141,12 @@ def evaluate_checkpoint(
     torch.manual_seed(eval_seed)
 
     envs = make_eval_envs(
-        eval_cfg, cfg.env.env_id, cfg.env.img_size, cfg.env.frame_stack, eval_seed
+        eval_cfg,
+        cfg.env.env_id,
+        cfg.env.img_size,
+        cfg.env.frame_stack,
+        eval_seed,
+        full_action_space=cfg.env.full_action_space,
     )
 
     def act(obs: np.ndarray) -> np.ndarray:
@@ -161,6 +166,7 @@ def evaluate_checkpoint(
             "git_sha_train": ckpt.get("git_sha"),
             "eval_seed": eval_seed,
             "protocol": eval_cfg.model_dump(),
+            "full_action_space_used": cfg.env.full_action_space,
         }
     )
     logger.info(
