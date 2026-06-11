@@ -75,6 +75,10 @@ class EvalConfig(BaseModel):
     noop_max: int = 30
     max_episode_steps: int = 27_000
     seed: int = 1000
+    clear_reward_threshold: float = Field(
+        default=1500.0,
+        description="Single-step raw reward marking a screen clear (ADR 0002)",
+    )
 
 
 class ExperimentConfig(BaseModel):

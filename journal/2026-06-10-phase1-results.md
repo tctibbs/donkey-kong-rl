@@ -6,7 +6,8 @@ barrel jumps at the bottom ramp until the bonus timer kills it.
 
 ## Run facts (all in ledger, run_id ppo_baseline_10m_s1_20260611_012915)
 
-- Training: 10,003,456 steps (1220 updates), 31.6 minutes wall, 5,274 SPS,
+- Training: 9,994,240 steps (1220 updates of 8,192; config asked for 10M and
+  the loop floors to whole updates), 31.6 minutes wall, 5,274 SPS,
   64 envs, 12 threads, git 3dc0ef990433 (clean), config_hash b84f51d8bfbe.
 - Train-time return100: best 4,067, final 4,024.
 - Evaluation (Machado protocol, 100 episodes, seed 1000): mean 4,084.0,

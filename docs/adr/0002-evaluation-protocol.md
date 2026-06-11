@@ -45,12 +45,17 @@ Baselines:
   revise this note.
 - An agent "survives screen 1" if at least 50 percent of evaluation episodes
   clear screen 1.
-- Measured 2026-06-10 (25 episodes each): PPO 10M baseline clear rate 0.00
-  (mean return 3,840); random policy clear rate 0.00 (mean return 120). The
-  PPO baseline scores 33x random purely by farming barrel jumps at the bottom
-  of the ramps until the bonus timer expires (confirmed visually from the
+- Measured 2026-06-10, ledger-backed (100 protocol episodes each, clear
+  rates stored in the eval rows): PPO 10M baseline clear_rate 0.00 (mean
+  return 4,027); random policy clear_rate 0.00 (mean return 122). The PPO
+  baseline scores 33x random purely by farming barrel jumps at the bottom of
+  the ramps until the bonus timer expires (confirmed visually from the
   evaluation video). Beating the survives-screen-1 baseline is the explicit
   Phase 2 target.
+- Stochastic-eval note: policy sampling is seeded (torch.manual_seed with the
+  eval seed) as of the Phase 1 PR; the two baseline eval rows (means 4,084
+  and 4,027, same checkpoint and protocol seed) bracket the sampling noise
+  from before that fix.
 
 ## Consequences
 

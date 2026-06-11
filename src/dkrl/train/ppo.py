@@ -139,7 +139,7 @@ def train(cfg: ExperimentConfig) -> dict:
             next_obs = torch.from_numpy(next_obs_np).to(device)
             next_done = torch.from_numpy(done_np.astype(np.float32)).to(device)
 
-            for ep_return, ep_length in stats.update(terminated, truncated, info):
+            for ep_return, ep_length, _ in stats.update(terminated, truncated, info):
                 episodes_done += 1
                 recent_returns.append(ep_return)
                 writer.add_scalar("charts/episodic_return", ep_return, global_step)

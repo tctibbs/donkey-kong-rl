@@ -97,4 +97,16 @@ def main() -> None:
         from dkrl.video import record_video
 
         setup_logging("video")
-        record_video(args.checkpoint, args.out, episodes=args.episodes, seed=args.seed)
+        from dkrl.ledger import git_sha
+
+        result = record_video(args.checkpoint, args.out, episodes=args.episodes, seed=args.seed)
+        result.update(
+            {
+                "kind": "video",
+                "checkpoint": str(args.checkpoint),
+                "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
