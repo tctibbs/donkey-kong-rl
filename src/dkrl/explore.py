@@ -41,19 +41,23 @@ class Cell:
 
 
 def _make_env(sticky: float = 0.0) -> tuple[gym.Env, Any]:
-    """Build the exploration env (frameskip 4, deterministic given the seed).
+    """Build the exploration env, IDENTICAL to the replay/training stack.
 
-    With sticky actions the realization is still deterministic for a fixed
-    env seed and action sequence (ALE's sticky RNG is seeded at reset), so
-    sequences replay exactly while being robust to action repeats.
+    Uses frameskip-1 ALE under AtariPreprocessing(frame_skip=4) so sticky-RNG
+    consumption matches replay exactly (four per-frame draws per agent step).
+    Sequences then replay bit-exactly for a fixed env seed even with sticky
+    actions, because ALE's sticky RNG is seeded at reset and cloneSystemState
+    captures it mid-trajectory.
     """
     base = gym.make(
         "ALE/DonkeyKong-v5",
-        frameskip=4,
+        frameskip=1,
         repeat_action_probability=sticky,
         full_action_space=True,
     )
-    return base, cast(Any, base.unwrapped).ale
+    env = AtariPreprocessing(base, noop_max=0, frame_skip=4, screen_size=84, grayscale_obs=True)
+    env = FrameStackObservation(env, 4)
+    return env, cast(Any, base.unwrapped).ale
 
 
 def _cell_key(ale: Any, score: float, boards_cleared: int) -> tuple:  # noqa: ANN401
