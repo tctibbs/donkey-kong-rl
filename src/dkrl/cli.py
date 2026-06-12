@@ -58,6 +58,19 @@ def main() -> None:
     p_sdemos.add_argument("--seed", type=int, default=11000)
     p_sdemos.add_argument("--merge-with", type=Path, default=None)
 
+    p_exp = sub.add_parser("explore", help="Go-Explore trajectory search (demo generation)")
+    p_exp.add_argument("--out", type=Path, required=True)
+    p_exp.add_argument("--iterations", type=int, default=100000)
+    p_exp.add_argument("--seed", type=int, default=0)
+    p_exp.add_argument("--target-score", type=float, default=35000.0)
+
+    p_rep = sub.add_parser("replay-demos", help="Convert explored trajectories to BC demos")
+    p_rep.add_argument("--trajectories", type=Path, nargs="+", required=True)
+    p_rep.add_argument("--out", type=Path, required=True)
+    p_rep.add_argument("--top-n", type=int, default=25)
+    p_rep.add_argument("--min-score", type=float, default=6000.0)
+    p_rep.add_argument("--merge-with", type=Path, default=None)
+
     p_demos = sub.add_parser("collect-demos", help="Collect scripted screen-1 demonstrations")
     p_demos.add_argument("--out", type=Path, default=Path("data/demos_screen1.npz"))
     p_demos.add_argument("--episodes", type=int, default=25)
@@ -142,6 +155,47 @@ def main() -> None:
                 "kind": "self_demos",
                 "checkpoint": str(args.checkpoint),
                 "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
+
+    elif args.command == "explore":
+        from dkrl.explore import explore
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging(f"explore-s{args.seed}")
+        result = explore(
+            args.out, iterations=args.iterations, seed=args.seed, target_score=args.target_score
+        )
+        result.update(
+            {
+                "kind": "explore",
+                "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
+
+    elif args.command == "replay-demos":
+        from dkrl.explore import replay_to_demos
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("replay-demos")
+        result = replay_to_demos(
+            args.trajectories,
+            args.out,
+            top_n=args.top_n,
+            min_score=args.min_score,
+            merge_with=args.merge_with,
+        )
+        result.update(
+            {
+                "kind": "replay_demos",
                 "git_sha": git_sha(),
                 "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }
