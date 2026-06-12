@@ -40,12 +40,17 @@ class Cell:
     steps: int
 
 
-def _make_env() -> tuple[gym.Env, Any]:
-    """Build the deterministic exploration env (frameskip 4, no sticky)."""
+def _make_env(sticky: float = 0.0) -> tuple[gym.Env, Any]:
+    """Build the exploration env (frameskip 4, deterministic given the seed).
+
+    With sticky actions the realization is still deterministic for a fixed
+    env seed and action sequence (ALE's sticky RNG is seeded at reset), so
+    sequences replay exactly while being robust to action repeats.
+    """
     base = gym.make(
         "ALE/DonkeyKong-v5",
         frameskip=4,
-        repeat_action_probability=0.0,
+        repeat_action_probability=sticky,
         full_action_space=True,
     )
     return base, cast(Any, base.unwrapped).ale
@@ -73,6 +78,7 @@ def explore(
     target_score: float = 35000.0,
     resume_from: list[Path] | None = None,
     resume_top: int = 8,
+    sticky: float = 0.0,
 ) -> dict:
     """Run the exploration loop and save the best trajectories found.
 
@@ -91,7 +97,7 @@ def explore(
         Dict with archive size, best score, and output path.
     """
     rng = np.random.default_rng(seed)
-    base, ale = _make_env()
+    base, ale = _make_env(sticky)
     base.reset(seed=0)
 
     start_actions: list[int] = []
@@ -202,6 +208,7 @@ def explore(
     ranked = sorted(archive.values(), key=lambda c: c.score, reverse=True)
     payload = {
         "start_seed": 0,
+        "sticky": sticky,
         "trajectories": [(c.score, c.actions) for c in ranked[:50]],
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -241,9 +248,11 @@ def replay_to_demos(
         Dict with converted counts and dataset sizes.
     """
     pooled: list[tuple[float, list[int]]] = []
+    sticky = 0.0
     for path in trajectory_paths:
         with path.open("rb") as f:
             payload = pickle.load(f)
+        sticky = float(payload.get("sticky", 0.0))
         pooled.extend(payload["trajectories"])
     pooled.sort(key=lambda t: t[0], reverse=True)
     payload = {"start_seed": 0, "trajectories": pooled}
@@ -251,7 +260,7 @@ def replay_to_demos(
     base = gym.make(
         "ALE/DonkeyKong-v5",
         frameskip=1,
-        repeat_action_probability=0.0,
+        repeat_action_probability=sticky,
         full_action_space=True,
     )
     env = AtariPreprocessing(base, noop_max=0, frame_skip=4, screen_size=84, grayscale_obs=True)

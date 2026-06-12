@@ -64,6 +64,7 @@ def main() -> None:
     p_exp.add_argument("--seed", type=int, default=0)
     p_exp.add_argument("--target-score", type=float, default=35000.0)
     p_exp.add_argument("--resume-from", type=Path, nargs="*", default=None)
+    p_exp.add_argument("--sticky", type=float, default=0.0)
 
     p_rep = sub.add_parser("replay-demos", help="Convert explored trajectories to BC demos")
     p_rep.add_argument("--trajectories", type=Path, nargs="+", required=True)
@@ -174,6 +175,7 @@ def main() -> None:
             seed=args.seed,
             target_score=args.target_score,
             resume_from=args.resume_from,
+            sticky=args.sticky,
         )
         result.update(
             {
