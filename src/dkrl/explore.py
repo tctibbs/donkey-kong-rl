@@ -1,6 +1,6 @@
 """Go-Explore-style trajectory search for demonstration generation.
 
-Explores Donkey Kong with emulator state save/restore (ale-py cloneState),
+Explores Donkey Kong with emulator state save/restore (ale-py cloneSystemState, which includes the sticky RNG),
 archiving the best game state per progress cell and expanding from promising
 cells with short random action bursts. The output is a deterministic action
 sequence reaching deep game states (rivets-screen completions, later rounds),
@@ -109,7 +109,7 @@ def explore(
         raise RuntimeError("game did not start after FIRE presses")
 
     archive: dict[tuple, Cell] = {}
-    root = Cell(0.0, start_actions, ale.cloneState(), len(start_actions))
+    root = Cell(0.0, start_actions, ale.cloneSystemState(), len(start_actions))
     archive[_cell_key(ale, 0.0, 0)] = root
     best = root
     boards_cleared_by_cell: dict[tuple, int] = {next(iter(archive)): 0}
@@ -134,7 +134,7 @@ def explore(
                     k = _cell_key(ale, score, cleared)
                     existing = archive.get(k)
                     if existing is None or score > existing.score:
-                        archive[k] = Cell(score, list(trace), ale.cloneState(), len(trace))
+                        archive[k] = Cell(score, list(trace), ale.cloneSystemState(), len(trace))
                         boards_cleared_by_cell[k] = cleared
                         if score > best.score:
                             best = archive[k]
@@ -165,7 +165,7 @@ def explore(
         if needs_reset:
             base.reset(seed=0)
             needs_reset = False
-        ale.restoreState(cell.ale_state)
+        ale.restoreSystemState(cell.ale_state)
         score = cell.score
         actions = list(cell.actions)
         cleared_now = boards_cleared
@@ -192,7 +192,9 @@ def explore(
                     or score > existing.score
                     or (score == existing.score and len(actions) < len(existing.actions))
                 ):
-                    archive[new_key] = Cell(score, list(actions), ale.cloneState(), len(actions))
+                    archive[new_key] = Cell(
+                        score, list(actions), ale.cloneSystemState(), len(actions)
+                    )
                     boards_cleared_by_cell[new_key] = cleared_now
                     if score > best.score:
                         best = archive[new_key]
@@ -281,19 +283,30 @@ def replay_to_demos(
     all_obs: list[np.ndarray] = []
     all_actions: list[int] = []
     converted = 0
+    skipped = 0
     replay_scores: list[float] = []
     for score, actions in payload["trajectories"]:
         if converted >= top_n or score < min_score:
             continue
         obs, _ = env.reset(seed=payload["start_seed"])
+        ep_obs: list[np.ndarray] = []
+        ep_actions: list[int] = []
         total = 0.0
         for a in actions:
-            all_obs.append(np.asarray(obs, dtype=np.uint8))
-            all_actions.append(int(a))
+            ep_obs.append(np.asarray(obs, dtype=np.uint8))
+            ep_actions.append(int(a))
             obs, reward, terminated, truncated, _ = env.step(int(a))
             total += float(reward)
             if terminated or truncated:
                 break
+        if total < 0.9 * score:
+            skipped += 1
+            logger.warning(
+                f"replay mismatch, skipping: explored {score:.0f}, replayed {total:.0f}"
+            )
+            continue
+        all_obs.extend(ep_obs)
+        all_actions.extend(ep_actions)
         converted += 1
         replay_scores.append(total)
         logger.info(f"replayed trajectory: explored {score:.0f}, replayed {total:.0f}")
