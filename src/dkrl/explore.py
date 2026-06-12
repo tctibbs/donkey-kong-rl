@@ -1,7 +1,8 @@
 """Go-Explore-style trajectory search for demonstration generation.
 
-Explores Donkey Kong with emulator state save/restore (ale-py cloneSystemState, which includes the sticky RNG),
-archiving the best game state per progress cell and expanding from promising
+Explores Donkey Kong with emulator state save/restore (ale-py
+cloneSystemState), archiving the best game state per progress cell and
+expanding from promising
 cells with short random action bursts. The output is a deterministic action
 sequence reaching deep game states (rivets-screen completions, later rounds),
 which `replay_to_demos` converts into (observation, action) BC pairs through
