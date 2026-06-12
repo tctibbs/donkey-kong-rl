@@ -73,6 +73,12 @@ def main() -> None:
     p_rep.add_argument("--min-score", type=float, default=6000.0)
     p_rep.add_argument("--merge-with", type=Path, default=None)
 
+    p_bank = sub.add_parser("build-bank", help="Build a restorable state bank from trajectories")
+    p_bank.add_argument("--trajectories", type=Path, nargs="+", required=True)
+    p_bank.add_argument("--out", type=Path, default=Path("data/state_bank.pkl"))
+    p_bank.add_argument("--top-n", type=int, default=5)
+    p_bank.add_argument("--snapshot-every", type=int, default=25)
+
     p_demos = sub.add_parser("collect-demos", help="Collect scripted screen-1 demonstrations")
     p_demos.add_argument("--out", type=Path, default=Path("data/demos_screen1.npz"))
     p_demos.add_argument("--episodes", type=int, default=25)
@@ -91,6 +97,8 @@ def main() -> None:
             cfg = cfg.model_copy(update={"track": False})
         if cfg.algo == "ppo_rnd":
             from dkrl.train.ppo_rnd import train_rnd as train
+        elif cfg.algo == "ppo_robustify":
+            from dkrl.train.robustify import train_robustify as train
         else:
             from dkrl.train.ppo import train
         row = train(cfg)
@@ -203,6 +211,24 @@ def main() -> None:
         result.update(
             {
                 "kind": "replay_demos",
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
+
+    elif args.command == "build-bank":
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+        from dkrl.robustify import build_state_bank
+
+        setup_logging("build-bank")
+        result = build_state_bank(
+            args.trajectories, args.out, top_n=args.top_n, snapshot_every=args.snapshot_every
+        )
+        result.update(
+            {
+                "kind": "state_bank",
                 "git_sha": git_sha(),
                 "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }

@@ -80,6 +80,22 @@ class RNDConfig(BaseModel):
     )
 
 
+class RobustifyConfig(BaseModel):
+    """Backward-curriculum restore-reset training (Go-Explore phase 2)."""
+
+    bank_path: str = "data/state_bank.pkl"
+    board_filter: int | None = Field(
+        default=None, description="0 barrels, 1 rivets, None all stages"
+    )
+    start_window: float = Field(
+        default=0.15, gt=0.0, le=1.0, description="Initial fraction of nearest-to-reward states"
+    )
+    schedule_frac: float = Field(
+        default=0.6, gt=0.0, le=1.0, description="Training fraction over which the window widens"
+    )
+    max_episode_steps: int = 2000
+
+
 class BCConfig(BaseModel):
     """Behavior-cloning warm-start from scripted demonstrations (ADR 0004)."""
 
@@ -129,11 +145,12 @@ class ExperimentConfig(BaseModel):
     name: str
     seed: int = 1
     total_timesteps: int = 10_000_000
-    algo: Literal["ppo", "ppo_rnd"] = "ppo"
+    algo: Literal["ppo", "ppo_rnd", "ppo_robustify"] = "ppo"
     env: EnvConfig = EnvConfig()
     ppo: PPOConfig = PPOConfig()
     rnd: RNDConfig = RNDConfig()
     bc: BCConfig = BCConfig()
+    robustify: RobustifyConfig = RobustifyConfig()
     eval: EvalConfig = EvalConfig()
     cuda: bool = True
     torch_deterministic: bool = True
