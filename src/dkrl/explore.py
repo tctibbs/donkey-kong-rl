@@ -38,26 +38,42 @@ class Cell:
     actions: list[int]
     ale_state: Any
     steps: int
+    prev_eff: int = 0
 
 
-def _make_env(sticky: float = 0.0) -> tuple[gym.Env, Any]:
+def _make_env() -> tuple[gym.Env, Any]:
     """Build the exploration env, IDENTICAL to the replay/training stack.
 
-    Uses frameskip-1 ALE under AtariPreprocessing(frame_skip=4) so sticky-RNG
-    consumption matches replay exactly (four per-frame draws per agent step).
-    Sequences then replay bit-exactly for a fixed env seed even with sticky
-    actions, because ALE's sticky RNG is seeded at reset and cloneSystemState
-    captures it mid-trajectory.
+    The env itself is deterministic (no ALE sticky). Stickiness is emulated
+    deterministically by `_sticky_effective`, so action sequences replay
+    bit-exactly regardless of state restores.
     """
     base = gym.make(
         "ALE/DonkeyKong-v5",
         frameskip=1,
-        repeat_action_probability=sticky,
+        repeat_action_probability=0.0,
         full_action_space=True,
     )
     env = AtariPreprocessing(base, noop_max=0, frame_skip=4, screen_size=84, grayscale_obs=True)
     env = FrameStackObservation(env, 4)
     return env, cast(Any, base.unwrapped).ale
+
+
+def _sticky_effective(intended: int, prev_effective: int, step_index: int, sticky: float) -> int:
+    """Deterministic sticky action: repeat based on a hash of the step index.
+
+    Mimics sticky-action perturbation (repeat the previous effective action
+    with probability ``sticky``) but the repeat decision is a pure function
+    of the step index, so exploration and replay realize identical
+    perturbations with no RNG-continuity requirements across state restores.
+    """
+    if sticky <= 0.0:
+        return intended
+    h = (step_index * 2654435761) & 0xFFFFFFFF
+    h ^= h >> 16
+    h = (h * 2246822519) & 0xFFFFFFFF
+    h ^= h >> 13
+    return prev_effective if (h % 10_000) < int(sticky * 10_000) else intended
 
 
 def _cell_key(ale: Any, score: float, boards_cleared: int) -> tuple:  # noqa: ANN401
@@ -101,19 +117,22 @@ def explore(
         Dict with archive size, best score, and output path.
     """
     rng = np.random.default_rng(seed)
-    base, ale = _make_env(sticky)
+    base, ale = _make_env()
     base.reset(seed=0)
 
     start_actions: list[int] = []
+    prev_eff = 0
     for _ in range(40):
         a = 1 if len(start_actions) % 2 == 0 else 0
-        base.step(a)
+        eff = _sticky_effective(a, prev_eff, len(start_actions), sticky)
+        base.step(eff)
         start_actions.append(a)
+        prev_eff = eff
     if not int(ale.getRAM()[RAM_GAMESTATE]) & 0x80:
         raise RuntimeError("game did not start after FIRE presses")
 
     archive: dict[tuple, Cell] = {}
-    root = Cell(0.0, start_actions, ale.cloneSystemState(), len(start_actions))
+    root = Cell(0.0, start_actions, ale.cloneSystemState(), len(start_actions), prev_eff)
     archive[_cell_key(ale, 0.0, 0)] = root
     best = root
     boards_cleared_by_cell: dict[tuple, int] = {next(iter(archive)): 0}
@@ -127,9 +146,12 @@ def explore(
                 score = 0.0
                 cleared = 0
                 trace: list[int] = []
+                p_eff = 0
                 for a in actions_prior:
-                    _, reward, terminated, truncated, _ = base.step(int(a))
+                    eff = _sticky_effective(int(a), p_eff, len(trace), sticky)
+                    _, reward, terminated, truncated, _ = base.step(eff)
                     trace.append(int(a))
+                    p_eff = eff
                     score += float(reward)
                     if float(reward) >= 1500:
                         cleared += 1
@@ -138,17 +160,19 @@ def explore(
                     k = _cell_key(ale, score, cleared)
                     existing = archive.get(k)
                     if existing is None or score > existing.score:
-                        archive[k] = Cell(score, list(trace), ale.cloneSystemState(), len(trace))
+                        archive[k] = Cell(
+                            score, list(trace), ale.cloneSystemState(), len(trace), p_eff
+                        )
                         boards_cleared_by_cell[k] = cleared
                         if score > best.score:
                             best = archive[k]
-        base.reset(seed=0)
-        for a in start_actions:
-            base.step(a)
         logger.info(f"resumed: archive {len(archive)} cells, best {best.score:.0f}")
+        needs_start_reset = True
+    else:
+        needs_start_reset = False
 
     action_pool = [2] * 6 + [3] * 3 + [4] * 3 + [1, 11, 12] * 2 + [0, 5, 6, 7]
-    needs_reset = False
+    needs_reset = needs_start_reset
     for it in range(iterations):
         keys = list(archive.keys())
         weights = np.array(
@@ -172,6 +196,7 @@ def explore(
         ale.restoreSystemState(cell.ale_state)
         score = cell.score
         actions = list(cell.actions)
+        p_eff = cell.prev_eff
         cleared_now = boards_cleared
         steps_left = int(rng.integers(burst_min, burst_max + 1))
         while steps_left > 0:
@@ -180,8 +205,10 @@ def explore(
             ended = False
             for _ in range(min(hold, steps_left)):
                 steps_left -= 1
-                _, reward, terminated, truncated, _ = base.step(current)
+                eff = _sticky_effective(current, p_eff, len(actions), sticky)
+                _, reward, terminated, truncated, _ = base.step(eff)
                 actions.append(current)
+                p_eff = eff
                 score += float(reward)
                 if float(reward) >= 1500:
                     cleared_now += 1
@@ -197,7 +224,7 @@ def explore(
                     or (score == existing.score and len(actions) < len(existing.actions))
                 ):
                     archive[new_key] = Cell(
-                        score, list(actions), ale.cloneSystemState(), len(actions)
+                        score, list(actions), ale.cloneSystemState(), len(actions), p_eff
                     )
                     boards_cleared_by_cell[new_key] = cleared_now
                     if score > best.score:
@@ -275,14 +302,7 @@ def replay_to_demos(
     pooled.sort(key=lambda t: t[0], reverse=True)
     payload = {"start_seed": 0, "trajectories": pooled}
 
-    base = gym.make(
-        "ALE/DonkeyKong-v5",
-        frameskip=1,
-        repeat_action_probability=sticky,
-        full_action_space=True,
-    )
-    env = AtariPreprocessing(base, noop_max=0, frame_skip=4, screen_size=84, grayscale_obs=True)
-    env = FrameStackObservation(env, 4)
+    env, _ = _make_env()
 
     all_obs: list[np.ndarray] = []
     all_actions: list[int] = []
@@ -296,10 +316,13 @@ def replay_to_demos(
         ep_obs: list[np.ndarray] = []
         ep_actions: list[int] = []
         total = 0.0
+        p_eff = 0
         for a in actions:
             ep_obs.append(np.asarray(obs, dtype=np.uint8))
             ep_actions.append(int(a))
-            obs, reward, terminated, truncated, _ = env.step(int(a))
+            eff = _sticky_effective(int(a), p_eff, len(ep_actions) - 1, sticky)
+            obs, reward, terminated, truncated, _ = env.step(eff)
+            p_eff = eff
             total += float(reward)
             if terminated or truncated:
                 break
