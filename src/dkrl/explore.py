@@ -56,7 +56,7 @@ def _make_env(sticky: float = 0.0) -> tuple[gym.Env, Any]:
     return base, cast(Any, base.unwrapped).ale
 
 
-def _cell_key(ale: Any, score: float, boards_cleared: int) -> tuple:
+def _cell_key(ale: Any, score: float, boards_cleared: int) -> tuple:  # noqa: ANN401
     """Progress bucket: board progression, lives, position bands, score band."""
     ram = ale.getRAM()
     return (
@@ -118,7 +118,7 @@ def explore(
         for path in resume_from:
             with path.open("rb") as f:
                 prior = pickle.load(f)
-            for score_prior, actions_prior in prior["trajectories"][:resume_top]:
+            for _score_prior, actions_prior in prior["trajectories"][:resume_top]:
                 base.reset(seed=0)
                 score = 0.0
                 cleared = 0
@@ -200,6 +200,18 @@ def explore(
                 break
         if it % 200 == 0:
             logger.info(f"iter {it}: best {best.score:.0f}, archive {len(archive)} cells")
+        if it % 20000 == 0 and it > 0:
+            ranked_now = sorted(archive.values(), key=lambda c: c.score, reverse=True)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with out_path.open("wb") as f:
+                pickle.dump(
+                    {
+                        "start_seed": 0,
+                        "sticky": sticky,
+                        "trajectories": [(c.score, c.actions) for c in ranked_now[:50]],
+                    },
+                    f,
+                )
         if best.score >= target_score:
             logger.info(f"target reached at iter {it}")
             break
