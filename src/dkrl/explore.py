@@ -71,6 +71,8 @@ def explore(
     burst_max: int = 80,
     seed: int = 0,
     target_score: float = 35000.0,
+    resume_from: list[Path] | None = None,
+    resume_top: int = 8,
 ) -> dict:
     """Run the exploration loop and save the best trajectories found.
 
@@ -81,6 +83,9 @@ def explore(
         burst_max: Maximum random actions per expansion burst.
         seed: RNG seed (env seed is fixed to 0 for replay determinism).
         target_score: Stop early when any cell reaches this score.
+        resume_from: Prior result pickles; their top trajectories are
+            replayed to seed the archive (iterative deepening).
+        resume_top: Trajectories to replay per resume file.
 
     Returns:
         Dict with archive size, best score, and output path.
@@ -102,6 +107,35 @@ def explore(
     archive[_cell_key(ale, 0.0, 0)] = root
     best = root
     boards_cleared_by_cell: dict[tuple, int] = {next(iter(archive)): 0}
+
+    if resume_from:
+        for path in resume_from:
+            with path.open("rb") as f:
+                prior = pickle.load(f)
+            for score_prior, actions_prior in prior["trajectories"][:resume_top]:
+                base.reset(seed=0)
+                score = 0.0
+                cleared = 0
+                trace: list[int] = []
+                for a in actions_prior:
+                    _, reward, terminated, truncated, _ = base.step(int(a))
+                    trace.append(int(a))
+                    score += float(reward)
+                    if float(reward) >= 1500:
+                        cleared += 1
+                    if terminated or truncated:
+                        break
+                    k = _cell_key(ale, score, cleared)
+                    existing = archive.get(k)
+                    if existing is None or score > existing.score:
+                        archive[k] = Cell(score, list(trace), ale.cloneState(), len(trace))
+                        boards_cleared_by_cell[k] = cleared
+                        if score > best.score:
+                            best = archive[k]
+        base.reset(seed=0)
+        for a in start_actions:
+            base.step(a)
+        logger.info(f"resumed: archive {len(archive)} cells, best {best.score:.0f}")
 
     action_pool = [2] * 6 + [3] * 3 + [4] * 3 + [1, 11, 12] * 2 + [0, 5, 6, 7]
     needs_reset = False

@@ -63,6 +63,7 @@ def main() -> None:
     p_exp.add_argument("--iterations", type=int, default=100000)
     p_exp.add_argument("--seed", type=int, default=0)
     p_exp.add_argument("--target-score", type=float, default=35000.0)
+    p_exp.add_argument("--resume-from", type=Path, nargs="*", default=None)
 
     p_rep = sub.add_parser("replay-demos", help="Convert explored trajectories to BC demos")
     p_rep.add_argument("--trajectories", type=Path, nargs="+", required=True)
@@ -168,7 +169,11 @@ def main() -> None:
 
         setup_logging(f"explore-s{args.seed}")
         result = explore(
-            args.out, iterations=args.iterations, seed=args.seed, target_score=args.target_score
+            args.out,
+            iterations=args.iterations,
+            seed=args.seed,
+            target_score=args.target_score,
+            resume_from=args.resume_from,
         )
         result.update(
             {
