@@ -177,6 +177,69 @@ def evaluate_checkpoint(
     return result
 
 
+def evaluate_ensemble(
+    barrels_checkpoint: Path,
+    rivets_checkpoint: Path,
+    router_path: Path,
+    episodes: int = 100,
+    seed: int = 1000,
+) -> dict:
+    """Evaluate a routed stage-expert ensemble under the locked protocol.
+
+    Args:
+        barrels_checkpoint: Expert for the barrels screen.
+        rivets_checkpoint: Expert for the rivets screen.
+        router_path: Trained StageRouter weights.
+        episodes: Evaluation episodes.
+        seed: Protocol seed.
+
+    Returns:
+        Summary statistics dict (same shape as checkpoint evals).
+    """
+    import torch as _torch
+
+    from dkrl.ensemble import load_ensemble_policy
+
+    ckpt = _torch.load(barrels_checkpoint, map_location="cpu", weights_only=False)
+    cfg = ExperimentConfig.model_validate(ckpt["config"])
+    eval_cfg = cfg.eval
+    device = _torch.device("cuda" if _torch.cuda.is_available() else "cpu")
+    policy = load_ensemble_policy(barrels_checkpoint, rivets_checkpoint, router_path, device)
+    _torch.manual_seed(seed)
+    envs = make_eval_envs(
+        eval_cfg,
+        cfg.env.env_id,
+        cfg.env.img_size,
+        cfg.env.frame_stack,
+        seed,
+        full_action_space=cfg.env.full_action_space,
+    )
+
+    def act(obs: np.ndarray) -> np.ndarray:
+        return policy(_torch.from_numpy(obs).to(device)).cpu().numpy()
+
+    logger.info(f"evaluating ensemble for {episodes} episodes (seed={seed})")
+    returns, lengths, max_steps = _rollout_episodes(envs, eval_cfg.num_envs, episodes, act)
+    envs.close()
+    result = summarize(returns, lengths, max_steps, eval_cfg.clear_reward_threshold)
+    result.update(
+        {
+            "kind": "eval_ensemble",
+            "barrels_checkpoint": str(barrels_checkpoint),
+            "rivets_checkpoint": str(rivets_checkpoint),
+            "router": str(router_path),
+            "eval_seed": seed,
+            "protocol": eval_cfg.model_dump(),
+        }
+    )
+    logger.info(
+        f"ensemble eval done: mean={result['return_mean']:.1f} "
+        f"median={result['return_median']:.1f} max={result['return_max']:.0f} "
+        f"clear_rate={result['clear_rate']:.2f}"
+    )
+    return result
+
+
 def random_baseline(
     eval_cfg: EvalConfig,
     env_id: str = "DonkeyKong-v5",

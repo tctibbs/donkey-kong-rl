@@ -73,6 +73,17 @@ def main() -> None:
     p_rep.add_argument("--min-score", type=float, default=6000.0)
     p_rep.add_argument("--merge-with", type=Path, default=None)
 
+    p_router = sub.add_parser("train-router", help="Train the stage router classifier")
+    p_router.add_argument("--out", type=Path, default=Path("data/router.pt"))
+    p_router.add_argument("--samples", type=int, default=3000)
+
+    p_ens = sub.add_parser("evaluate-ensemble", help="Evaluate a routed stage-expert ensemble")
+    p_ens.add_argument("--barrels", type=Path, required=True)
+    p_ens.add_argument("--rivets", type=Path, required=True)
+    p_ens.add_argument("--router", type=Path, default=Path("data/router.pt"))
+    p_ens.add_argument("--episodes", type=int, default=100)
+    p_ens.add_argument("--seed", type=int, default=1000)
+
     p_bank = sub.add_parser("build-bank", help="Build a restorable state bank from trajectories")
     p_bank.add_argument("--trajectories", type=Path, nargs="+", required=True)
     p_bank.add_argument("--out", type=Path, default=Path("data/state_bank.pkl"))
@@ -215,6 +226,35 @@ def main() -> None:
                 "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }
         )
+        append_row(result)
+
+    elif args.command == "train-router":
+        from dkrl.ensemble import train_router
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("train-router")
+        result = train_router(args.out, samples=args.samples)
+        result.update(
+            {
+                "kind": "router",
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
+
+    elif args.command == "evaluate-ensemble":
+        from dkrl.evaluate import evaluate_ensemble
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("eval-ensemble")
+        result = evaluate_ensemble(
+            args.barrels, args.rivets, args.router, episodes=args.episodes, seed=args.seed
+        )
+        result["git_sha"] = git_sha()
+        result["finished_at"] = datetime.now(UTC).isoformat(timespec="seconds")
         append_row(result)
 
     elif args.command == "build-bank":
