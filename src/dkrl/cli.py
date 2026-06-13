@@ -109,7 +109,10 @@ def main() -> None:
         if cfg.algo == "ppo_rnd":
             from dkrl.train.ppo_rnd import train_rnd as train
         elif cfg.algo == "ppo_robustify":
-            from dkrl.train.robustify import train_robustify as train
+            if cfg.robustify.recurrent:
+                from dkrl.train.robustify_lstm import train_robustify_lstm as train
+            else:
+                from dkrl.train.robustify import train_robustify as train
         elif cfg.algo == "ppo_lstm":
             from dkrl.train.ppo_lstm import train_lstm as train
         else:

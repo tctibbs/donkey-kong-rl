@@ -99,6 +99,12 @@ class RobustifyConfig(BaseModel):
     board_filter: int | None = Field(
         default=None, description="0 barrels, 1 rivets, None all stages"
     )
+    init_from: str | None = Field(
+        default=None, description="Checkpoint to warm-start the policy (recurrent continue-train)"
+    )
+    recurrent: bool = Field(
+        default=False, description="Use the LSTM agent for restore-reset training"
+    )
     start_window: float = Field(
         default=0.15, gt=0.0, le=1.0, description="Initial fraction of nearest-to-reward states"
     )

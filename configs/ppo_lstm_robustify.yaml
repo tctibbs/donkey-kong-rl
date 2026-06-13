@@ -1,0 +1,25 @@
+# Recurrent robustification: warm-start the best recurrent agent and have it
+# practice deep states (rivets, round-2) via the backward curriculum under
+# real sticky noise, carrying hidden state. Synthesis of the two levers that
+# each helped: memory + trial-practice-at-depth. The feedforward rivets
+# expert capped at 851; this tests whether memory + deep practice breaks it.
+name: ppo_lstm_robustify_15m
+seed: 1
+total_timesteps: 15000000
+algo: ppo_robustify
+env:
+  num_envs: 36
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+lstm:
+  hidden_size: 256
+robustify:
+  recurrent: true
+  init_from: checkpoints/ppo_lstm_distill_25m_s1_20260613_042132/final.pt
+  bank_path: data/state_bank_deep.pkl
+  start_window: 0.2
+  schedule_frac: 0.7
+  max_episode_steps: 2500
+checkpoint_interval_updates: 400
+track: true
