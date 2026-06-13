@@ -128,6 +128,8 @@ def main() -> None:
                 from dkrl.train.robustify import train_robustify as train
         elif cfg.algo == "ppo_lstm":
             from dkrl.train.ppo_lstm import train_lstm as train
+        elif cfg.algo == "ppo_sil":
+            from dkrl.train.ppo_sil import train_sil as train
         else:
             from dkrl.train.ppo import train
         row = train(cfg)

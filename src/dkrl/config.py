@@ -80,6 +80,24 @@ class RNDConfig(BaseModel):
     )
 
 
+class SILConfig(BaseModel):
+    """Self-Imitation Learning (Oh et al. 2018) hyperparameters."""
+
+    init_from: str | None = Field(
+        default=None, description="Feedforward checkpoint to warm-start the policy"
+    )
+    seed_trajectories: list[str] = Field(
+        default_factory=list, description="Go-Explore trajectory pkls to seed the SIL buffer"
+    )
+    buffer_size: int = 100_000
+    updates_per_iter: int = Field(default=4, ge=0)
+    batch_size: int = 512
+    vf_coef: float = 0.01
+    min_return: float = Field(
+        default=0.0, description="Only buffer episodes above this raw return"
+    )
+
+
 class LSTMConfig(BaseModel):
     """Recurrent-policy hyperparameters (used when algo is ppo_lstm)."""
 
@@ -169,13 +187,14 @@ class ExperimentConfig(BaseModel):
     name: str
     seed: int = 1
     total_timesteps: int = 10_000_000
-    algo: Literal["ppo", "ppo_rnd", "ppo_robustify", "ppo_lstm"] = "ppo"
+    algo: Literal["ppo", "ppo_rnd", "ppo_robustify", "ppo_lstm", "ppo_sil"] = "ppo"
     env: EnvConfig = EnvConfig()
     ppo: PPOConfig = PPOConfig()
     rnd: RNDConfig = RNDConfig()
     bc: BCConfig = BCConfig()
     robustify: RobustifyConfig = RobustifyConfig()
     lstm: LSTMConfig = LSTMConfig()
+    sil: SILConfig = SILConfig()
     eval: EvalConfig = EvalConfig()
     cuda: bool = True
     torch_deterministic: bool = True
