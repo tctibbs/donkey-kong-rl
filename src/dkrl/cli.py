@@ -78,6 +78,14 @@ def main() -> None:
     p_rep.add_argument("--min-score", type=float, default=6000.0)
     p_rep.add_argument("--merge-with", type=Path, default=None)
 
+    p_dag = sub.add_parser(
+        "dagger-collect", help="Relabel policy-visited states via search (ADR 0005)"
+    )
+    p_dag.add_argument("--checkpoint", type=Path, required=True)
+    p_dag.add_argument("--out", type=Path, required=True)
+    p_dag.add_argument("--states", type=int, default=120)
+    p_dag.add_argument("--seed", type=int, default=20000)
+
     p_router = sub.add_parser("train-router", help="Train the stage router classifier")
     p_router.add_argument("--out", type=Path, default=Path("data/router.pt"))
     p_router.add_argument("--samples", type=int, default=3000)
@@ -255,6 +263,22 @@ def main() -> None:
         result.update(
             {
                 "kind": "replay_demos",
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
+
+    elif args.command == "dagger-collect":
+        from dkrl.dagger import dagger_collect
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("dagger-collect")
+        result = dagger_collect(args.checkpoint, args.out, states=args.states, seed=args.seed)
+        result.update(
+            {
+                "kind": "dagger_collect",
                 "git_sha": git_sha(),
                 "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }
