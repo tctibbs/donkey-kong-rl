@@ -23,11 +23,21 @@ choice. 30k (a factor of 4 higher) needs a different resource or paradigm.
 The recurrent-robustify run trained only from restored mid-game states and
 forgot how to play from a true game start: it scored about 1,600 per restored
 episode but 206 from a real reset (restore-distribution shift, the same
-failure that made the feedforward rivets expert worse in the ensemble). It is
-a tooling artifact, not a path forward; the standalone recurrent policy
-(7,285) remains the best agent. A fix (mixing true-start resets into the
-curriculum) would likely recover to about 7k given the deep-practice return
-plateaued at the same reactive-skill level, so it was not pursued.
+failure that made the feedforward rivets expert worse in the ensemble).
+
+The mixed-reset fix (50% real-start episodes to preserve start competence,
+50% deep-state practice; ppo_lstm_robustify_mixed, warm-started from the 7,285
+recurrent agent) was then tried in response to that diagnosis. At update 800
+it evaluated at mean 3,060, clear_rate 0.00: better than the all-restore
+collapse (206) but still DEGRADING from the 7,285 starting point. The
+deep-state practice plus value-function retraining erode the from-start
+clearing skill faster than 50% start episodes can hold it. Raising the
+start fraction would converge back toward the plain recurrent policy; it
+cannot add the deep skill without destabilizing the base. This is the
+fundamental tension of restore-based robustification on this task and it
+holds across feedforward/recurrent and all-restore/mixed variants. The
+standalone recurrent policy (7,285) remains the best agent and the campaign's
+final result.
 
 The progression discovery-then-execution is consistent: demonstrations solve
 discovery (0.00 to 1.00 clear rate), but no method pushes execution past
