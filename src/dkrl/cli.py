@@ -66,6 +66,11 @@ def main() -> None:
     p_exp.add_argument("--resume-from", type=Path, nargs="*", default=None)
     p_exp.add_argument("--sticky", type=float, default=0.0)
 
+    p_rv = sub.add_parser("replay-video", help="Render an explored trajectory to MP4")
+    p_rv.add_argument("--trajectory", type=Path, required=True)
+    p_rv.add_argument("--out", type=Path, required=True)
+    p_rv.add_argument("--rank", type=int, default=0)
+
     p_rep = sub.add_parser("replay-demos", help="Convert explored trajectories to BC demos")
     p_rep.add_argument("--trajectories", type=Path, nargs="+", required=True)
     p_rep.add_argument("--out", type=Path, required=True)
@@ -226,6 +231,13 @@ def main() -> None:
             }
         )
         append_row(result)
+
+    elif args.command == "replay-video":
+        from dkrl.log import setup_logging
+        from dkrl.replay_video import record_trajectory_video
+
+        setup_logging("replay-video")
+        record_trajectory_video(args.trajectory, args.out, rank=args.rank)
 
     elif args.command == "replay-demos":
         from dkrl.explore import replay_to_demos
