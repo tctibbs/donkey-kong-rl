@@ -80,7 +80,17 @@ def record_video(
     ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     cfg = ExperimentConfig.model_validate(ckpt["config"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    policy = load_policy(ckpt, cfg, device)
+    lstm_agent = None
+    if cfg.algo == "ppo_lstm":
+        from dkrl.agents.lstm import LSTMAgent
+
+        lstm_agent = LSTMAgent(ckpt["n_actions"], cfg.env.frame_stack, cfg.lstm.hidden_size)
+        lstm_agent = lstm_agent.to(device)
+        lstm_agent.load_state_dict(ckpt["model_state_dict"])
+        lstm_agent.eval()
+        lstm_state = lstm_agent.initial_state(1, device)
+    else:
+        policy = load_policy(ckpt, cfg, device)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     writer = imageio.get_writer(out_path, fps=60, codec="libx264", quality=7)
@@ -105,10 +115,19 @@ def record_video(
     returns = []
     for ep in range(episodes):
         obs, _ = env.reset(seed=seed + ep)
+        if lstm_agent is not None:
+            lstm_state = lstm_agent.initial_state(1, device)
         ep_return, steps = 0.0, 0
         while True:
             x = torch.from_numpy(np.asarray(obs)[None]).to(device)
-            action = policy(x)
+            if lstm_agent is not None:
+                done = torch.zeros(1, device=device)
+                with torch.no_grad():
+                    action, _, _, _, lstm_state = lstm_agent.get_action_and_value(
+                        x, lstm_state, done
+                    )
+            else:
+                action = policy(x)
             obs, reward, terminated, truncated, _ = env.step(int(action.item()))
             ep_return += float(reward)
             steps += 1
