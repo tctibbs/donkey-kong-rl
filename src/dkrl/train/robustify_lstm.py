@@ -30,10 +30,17 @@ from dkrl.robustify import RestoreResetEnv
 from dkrl.train.ppo import make_run_id
 
 
-def _worker(bank_path: str, board: int | None, sticky: float, max_steps: int, seed: int):  # noqa: ANN202
+def _worker(  # noqa: ANN202
+    bank_path: str, board: int | None, sticky: float, max_steps: int, seed: int, start_prob: float
+):
     """Factory for one restore-reset worker env."""
     return RestoreResetEnv(
-        bank_path, board_filter=board, sticky=sticky, max_steps=max_steps, seed=seed
+        bank_path,
+        board_filter=board,
+        sticky=sticky,
+        max_steps=max_steps,
+        seed=seed,
+        start_reset_prob=start_prob,
     )
 
 
@@ -83,6 +90,7 @@ def train_robustify_lstm(cfg: ExperimentConfig) -> dict:
                 cfg.env.sticky_action_prob,
                 rb.max_episode_steps,
                 cfg.seed * 1000 + i,
+                rb.start_reset_prob,
             )
             for i in range(num_envs)
         ],

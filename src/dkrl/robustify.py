@@ -141,8 +141,15 @@ class RestoreResetEnv(gym.Env):
         sticky: float = 0.25,
         max_steps: int = 2000,
         seed: int = 0,
+        start_reset_prob: float = 0.0,
     ) -> None:
-        """Load the bank and build the wrapped ALE stack."""
+        """Load the bank and build the wrapped ALE stack.
+
+        Args:
+            start_reset_prob: Fraction of resets that begin a real game from
+                the start (preserving from-start competence) instead of
+                restoring a bank state. The rest practice deep states.
+        """
         super().__init__()
         with Path(bank_path).open("rb") as f:
             bank: list[BankEntry] = pickle.load(f)
@@ -158,13 +165,14 @@ class RestoreResetEnv(gym.Env):
             full_action_space=True,
         )
         env = AtariPreprocessing(
-            base, noop_max=0, frame_skip=4, screen_size=84, grayscale_obs=True
+            base, noop_max=30, frame_skip=4, screen_size=84, grayscale_obs=True
         )
         self._env = FrameStackObservation(env, 4)
         self._ale = cast(Any, base.unwrapped).ale
         self._rng = np.random.default_rng(seed)
         self._steps = 0
         self._max_steps = max_steps
+        self._start_reset_prob = start_reset_prob
         self._lo = 0.0
         self._hi = 1.0
         self.observation_space = self._env.observation_space
@@ -177,14 +185,19 @@ class RestoreResetEnv(gym.Env):
         self._hi = hi_frac
 
     def reset(self, *, seed: int | None = None, options: dict | None = None) -> tuple:
-        """Restore a bank state sampled from the current curriculum window."""
+        """Begin a real-start episode or restore a curriculum-sampled state."""
+        self._steps = 0
+        obs, _ = self._env.reset()
+        if self._rng.random() < self._start_reset_prob:
+            # Real game start: press FIRE until the game is in progress.
+            for i in range(40):
+                obs, _, _, _, info = self._env.step(1 if i % 2 == 0 else 0)
+            return obs, info
         n = len(self.bank)
         lo = int(self._lo * (n - 1))
         hi = max(lo + 1, int(self._hi * (n - 1)))
         entry = self.bank[int(self._rng.integers(lo, hi + 1)) % n]
-        self._env.reset(seed=0)
         self._ale.restoreSystemState(pickle.loads(entry.state_blob))
-        self._steps = 0
         obs, reward, terminated, truncated, info = self._env.step(0)
         return obs, info
 

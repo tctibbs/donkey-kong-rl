@@ -105,6 +105,12 @@ class RobustifyConfig(BaseModel):
     recurrent: bool = Field(
         default=False, description="Use the LSTM agent for restore-reset training"
     )
+    start_reset_prob: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Fraction of resets that start a real game (preserves start competence)",
+    )
     start_window: float = Field(
         default=0.15, gt=0.0, le=1.0, description="Initial fraction of nearest-to-reward states"
     )
