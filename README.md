@@ -27,9 +27,18 @@ ledger, learning curves, evaluation videos, experiment journal).
   (clip vs scale within seed noise across 3 seeds each).
 - Phase 4 (final agent): the production recipe at 25M steps, 3 seeds, pooled
   over 300 protocol episodes: mean 6,884 (95 percent CI 6,724 to 7,027), IQM
-  7,071, median 7,100, screen-1 clear rate 0.97. That is 56x random and 71
-  percent above the best no-demonstration agent. Draft methods and results:
+  7,071, median 7,100, screen-1 clear rate 0.97. Draft methods and results:
   `docs/paper/methods-and-results.md`.
+- Headline (two distinct results, kept separate):
+  - Robust learned policy under the stochastic Machado protocol: best mean
+    7,285 (recurrent LSTM distilled from the Go-Explore agent), 100 percent
+    screen-1 clear, 58x random. This is the ceiling for a closed-loop policy
+    across eight method classes.
+  - Discovery (Go-Explore, deterministic open-loop): a verified, reproducible
+    trajectory scoring 30,100 (`dkrl replay-video`, explored 30,100 =
+    replayed 30,100). The agent reaches the 30k range as a discovered
+    trajectory; the gap to the 7,285 robust policy is the measured cost of
+    robust reactive execution under action-repeat noise.
 
 ## Hardware target
 
