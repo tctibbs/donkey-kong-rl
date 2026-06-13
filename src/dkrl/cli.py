@@ -127,10 +127,13 @@ def main() -> None:
         from dkrl.log import setup_logging
 
         setup_logging("eval")
-        _algo = ExperimentConfig.model_validate(
+        _cfg = ExperimentConfig.model_validate(
             _torch.load(args.checkpoint, map_location="cpu", weights_only=False)["config"]
-        ).algo
-        if _algo == "ppo_lstm":
+        )
+        _is_recurrent = _cfg.algo == "ppo_lstm" or (
+            _cfg.algo == "ppo_robustify" and _cfg.robustify.recurrent
+        )
+        if _is_recurrent:
             from dkrl.evaluate import evaluate_lstm_checkpoint
 
             result = evaluate_lstm_checkpoint(

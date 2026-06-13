@@ -17,8 +17,17 @@ choice. 30k (a factor of 4 higher) needs a different resource or paradigm.
 | robust Go-Explore demos (GE3) | 7,123 | 1.00 | ppo_goexplore3 |
 | MoE stage experts | 4,945 | 1.00 | ensemble |
 | backward-curriculum rivets expert | (851 deep) | n/a | ppo_rivets_expert |
-| recurrent (LSTM) policy | 7,285 | 1.00 | ppo_lstm_distill |
-| recurrent + deep-state robustification | see eval | n/a | ppo_lstm_robustify |
+| recurrent (LSTM) policy | 7,285 | 1.00 | ppo_lstm_distill (BEST) |
+| recurrent + deep-state robustification | 206 | 0.00 | ppo_lstm_robustify (collapsed) |
+
+The recurrent-robustify run trained only from restored mid-game states and
+forgot how to play from a true game start: it scored about 1,600 per restored
+episode but 206 from a real reset (restore-distribution shift, the same
+failure that made the feedforward rivets expert worse in the ensemble). It is
+a tooling artifact, not a path forward; the standalone recurrent policy
+(7,285) remains the best agent. A fix (mixing true-start resets into the
+curriculum) would likely recover to about 7k given the deep-practice return
+plateaued at the same reactive-skill level, so it was not pursued.
 
 The progression discovery-then-execution is consistent: demonstrations solve
 discovery (0.00 to 1.00 clear rate), but no method pushes execution past
