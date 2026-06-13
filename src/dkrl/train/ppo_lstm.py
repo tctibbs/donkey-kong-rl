@@ -10,6 +10,7 @@ import csv
 import random
 import time
 from collections import deque
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -31,7 +32,7 @@ def _distill_teacher(
     agent: LSTMAgent,
     cfg: ExperimentConfig,
     device: torch.device,
-) -> None:
+) -> Callable[[torch.Tensor], torch.Tensor]:
     """Distill a feedforward teacher into the LSTM with correct recurrence.
 
     Rolls the teacher policy through the training env in (num_steps, num_envs)
@@ -39,7 +40,9 @@ def _distill_teacher(
     teacher's actions over each chunk with hidden-state propagation and
     done-based resets. This gives the LSTM both the teacher's visual features
     and an action prior that is valid under real recurrent rollout, unlike
-    single-frame BC.
+    single-frame BC. The teacher callable is returned so the PPO phase can keep
+    an annealed online-distillation loss (the recurrent equivalent of the BC
+    floor) to hold the behavior while fine-tuning.
     """
     from dkrl.evaluate import load_policy
 
@@ -98,6 +101,7 @@ def _distill_teacher(
             acc = float((logits.argmax(1) == chunk_act.reshape(-1)).float().mean())
             logger.info(f"distill chunk {chunk + 1}/{cfg.lstm.distill_chunks}: acc={acc:.3f}")
     envs.close()
+    return teacher
 
 
 def _lstm_bc_logits(agent: LSTMAgent, frames: torch.Tensor) -> torch.Tensor:
@@ -176,8 +180,9 @@ def train_lstm(cfg: ExperimentConfig) -> dict:
     agent = LSTMAgent(n_actions, cfg.env.frame_stack, cfg.lstm.hidden_size).to(device)
 
     demo_obs = demo_actions = None
+    teacher = None
     if cfg.lstm.distill_teacher:
-        _distill_teacher(agent, cfg, device)
+        teacher = _distill_teacher(agent, cfg, device)
     elif cfg.bc.enabled:
         demo_data = np.load(cfg.bc.demo_path)
         demo_obs = torch.from_numpy(demo_data["observations"])
@@ -321,6 +326,22 @@ def train_lstm(cfg: ExperimentConfig) -> dict:
                 v_loss = 0.5 * ((newvalue.view(-1) - mb_ret) ** 2).mean()
                 entropy_loss = entropy.mean()
                 loss = pg_loss - cfg.ppo.ent_coef * entropy_loss + v_loss * cfg.ppo.vf_coef
+                if teacher is not None:
+                    frac_left = max(0.0, 1.0 - (update - 1) / cfg.bc.aux_anneal_updates)
+                    aux_now = (
+                        cfg.bc.aux_coef_floor
+                        + (cfg.bc.aux_coef - cfg.bc.aux_coef_floor) * frac_left
+                    )
+                    if aux_now > 0:
+                        with torch.no_grad():
+                            teacher_act = teacher(mb_obs)
+                        mb_logits = agent.actor(
+                            agent.get_states(
+                                mb_obs.float(), mb_state, dones[:, mb_envs].reshape(-1)
+                            )[0]
+                        )
+                        distill_loss = torch.nn.functional.cross_entropy(mb_logits, teacher_act)
+                        loss = loss + aux_now * distill_loss
                 if demo_obs is not None and demo_actions is not None:
                     frac_left = max(0.0, 1.0 - (update - 1) / cfg.bc.aux_anneal_updates)
                     aux_now = (
