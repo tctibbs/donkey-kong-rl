@@ -1,0 +1,24 @@
+# Search-DAgger round 2 (ADR 0005): DAgger-DOMINANT training. Round 1 was
+# inconclusive because the search labels were only 1.1% of the data (drowned
+# by 96k robust-demo samples); the 5,990 was within kickstart seed variance.
+# Here the demo set is ~3,000 search-relabeled states plus a smaller robust
+# admixture, so the search expert's labels actually drive learning and the
+# hypothesis (does recovery-relabeling help?) is conclusively tested.
+name: ppo_dagger_r2_15m
+seed: 1
+total_timesteps: 15000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+bc:
+  enabled: true
+  demo_path: data/demos_dagger_r2.npz
+  epochs: 10
+  aux_coef: 1.0
+  aux_anneal_updates: 400
+  aux_coef_floor: 0.2
+checkpoint_interval_updates: 400
+track: true
