@@ -27,6 +27,79 @@ from dkrl.log import setup_logging
 from dkrl.train.ppo import make_run_id
 
 
+def _distill_teacher(
+    agent: LSTMAgent,
+    cfg: ExperimentConfig,
+    device: torch.device,
+) -> None:
+    """Distill a feedforward teacher into the LSTM with correct recurrence.
+
+    Rolls the teacher policy through the training env in (num_steps, num_envs)
+    chunks (same shape the PPO update uses), then trains the LSTM to match the
+    teacher's actions over each chunk with hidden-state propagation and
+    done-based resets. This gives the LSTM both the teacher's visual features
+    and an action prior that is valid under real recurrent rollout, unlike
+    single-frame BC.
+    """
+    from dkrl.evaluate import load_policy
+
+    assert cfg.lstm.distill_teacher is not None
+    teacher_ckpt = torch.load(cfg.lstm.distill_teacher, map_location="cpu", weights_only=False)
+    teacher_cfg = ExperimentConfig.model_validate(teacher_ckpt["config"])
+    teacher = load_policy(teacher_ckpt, teacher_cfg, device)
+
+    # Warm-start the CNN trunk from the teacher (identical architecture).
+    teacher_net = {
+        k[len("network.") :]: v
+        for k, v in teacher_ckpt["model_state_dict"].items()
+        if k.startswith("network.")
+    }
+    agent.network.load_state_dict(teacher_net)
+
+    envs = make_train_envs(cfg.env, cfg.seed + 7)
+    num_envs = cfg.env.num_envs
+    num_steps = cfg.ppo.num_steps
+    obs_shape = (cfg.env.frame_stack, cfg.env.img_size, cfg.env.img_size)
+    opt = optim.Adam(agent.parameters(), lr=cfg.bc.learning_rate)
+    ce = torch.nn.CrossEntropyLoss()
+
+    next_obs_np, _ = envs.reset()
+    next_obs = torch.from_numpy(next_obs_np).to(device)
+    next_done = torch.zeros(num_envs, device=device)
+    for chunk in range(cfg.lstm.distill_chunks):
+        chunk_obs = torch.zeros(
+            (num_steps, num_envs, *obs_shape), dtype=torch.uint8, device=device
+        )
+        chunk_act = torch.zeros((num_steps, num_envs), dtype=torch.long, device=device)
+        chunk_done = torch.zeros((num_steps, num_envs), device=device)
+        for step in range(num_steps):
+            chunk_obs[step] = next_obs
+            chunk_done[step] = next_done
+            with torch.no_grad():
+                teacher_action = teacher(next_obs)
+            chunk_act[step] = teacher_action
+            next_obs_np, _, terminated, truncated, _ = envs.step(teacher_action.cpu().numpy())
+            next_obs = torch.from_numpy(next_obs_np).to(device)
+            next_done = torch.from_numpy(
+                np.logical_or(terminated, truncated).astype(np.float32)
+            ).to(device)
+
+        state = agent.initial_state(num_envs, device)
+        out, _ = agent.get_states(
+            chunk_obs.reshape((-1, *obs_shape)).float(), state, chunk_done.reshape(-1)
+        )
+        logits = agent.actor(out)
+        loss = ce(logits, chunk_act.reshape(-1))
+        opt.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(agent.parameters(), cfg.ppo.max_grad_norm)
+        opt.step()
+        if (chunk + 1) % 20 == 0:
+            acc = float((logits.argmax(1) == chunk_act.reshape(-1)).float().mean())
+            logger.info(f"distill chunk {chunk + 1}/{cfg.lstm.distill_chunks}: acc={acc:.3f}")
+    envs.close()
+
+
 def _lstm_bc_logits(agent: LSTMAgent, frames: torch.Tensor) -> torch.Tensor:
     """Actor logits for a batch of single frames (zeroed hidden, length-1 seq)."""
     device = frames.device
@@ -103,7 +176,9 @@ def train_lstm(cfg: ExperimentConfig) -> dict:
     agent = LSTMAgent(n_actions, cfg.env.frame_stack, cfg.lstm.hidden_size).to(device)
 
     demo_obs = demo_actions = None
-    if cfg.bc.enabled:
+    if cfg.lstm.distill_teacher:
+        _distill_teacher(agent, cfg, device)
+    elif cfg.bc.enabled:
         demo_data = np.load(cfg.bc.demo_path)
         demo_obs = torch.from_numpy(demo_data["observations"])
         demo_actions = torch.from_numpy(demo_data["actions"])

@@ -1,0 +1,21 @@
+# Recurrent fine-tuning of the best feedforward agent. Distill GE3 (mean 7.1k,
+# 100% screen-1 clear) into an LSTM with correct recurrent dynamics (CNN trunk
+# copied, actions matched over real rollout sequences), then PPO fine-tune
+# under sticky actions. The LSTM starts at GE3's competence and can improve
+# reactive rivets play using flame-velocity memory. Decisive test of whether
+# the 7k ceiling is architectural.
+name: ppo_lstm_distill_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_lstm
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+lstm:
+  hidden_size: 256
+  distill_teacher: checkpoints/ppo_goexplore3_25m_s1_20260612_182543/final.pt
+  distill_chunks: 500
+checkpoint_interval_updates: 400
+track: true
