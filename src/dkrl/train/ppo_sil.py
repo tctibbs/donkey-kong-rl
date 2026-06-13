@@ -33,19 +33,30 @@ from dkrl.train.ppo import make_run_id
 
 
 class SILBuffer:
-    """Fixed-capacity buffer of (obs, action, return) for self-imitation."""
+    """Self-imitation buffer with a circular self-play region and a separate,
+    NON-EVICTING demonstration region (SIL-from-Demonstrations design).
 
-    def __init__(self, capacity: int, obs_shape: tuple[int, ...]) -> None:
-        """Allocate the buffer arrays."""
+    Seeded demonstration transitions are kept permanently so the policy keeps
+    self-imitating the deep trajectories instead of overwriting them with its
+    own lower-return episodes. Sampling draws a fixed fraction from the demos.
+    """
+
+    def __init__(self, capacity: int, obs_shape: tuple[int, ...], demo_capacity: int) -> None:
+        """Allocate the self-play and demonstration arrays."""
         self.capacity = capacity
         self.obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
         self.actions = np.zeros(capacity, dtype=np.int64)
         self.returns = np.zeros(capacity, dtype=np.float32)
         self.size = 0
         self.pos = 0
+        self.d_obs = np.zeros((demo_capacity, *obs_shape), dtype=np.uint8)
+        self.d_actions = np.zeros(demo_capacity, dtype=np.int64)
+        self.d_returns = np.zeros(demo_capacity, dtype=np.float32)
+        self.d_size = 0
+        self.d_capacity = demo_capacity
 
     def add_episode(self, obs: list[np.ndarray], actions: list[int], returns: list[float]) -> None:
-        """Add one episode's transitions (returns are discounted to-go)."""
+        """Add one self-play episode's transitions to the circular region."""
         for o, a, r in zip(obs, actions, returns, strict=True):
             self.obs[self.pos] = o
             self.actions[self.pos] = a
@@ -53,13 +64,44 @@ class SILBuffer:
             self.pos = (self.pos + 1) % self.capacity
             self.size = min(self.size + 1, self.capacity)
 
-    def sample(self, batch: int, rng: np.random.Generator) -> tuple[np.ndarray, ...]:
-        """Sample a batch prioritized by stored return (higher = more likely)."""
-        n = self.size
-        priorities = self.returns[:n] - self.returns[:n].min() + 1.0
-        probs = priorities / priorities.sum()
-        idx = rng.choice(n, size=min(batch, n), p=probs)
-        return self.obs[idx], self.actions[idx], self.returns[idx]
+    def add_demos(self, obs: list[np.ndarray], actions: list[int], returns: list[float]) -> None:
+        """Add demonstration transitions to the permanent, non-evicting region."""
+        for o, a, r in zip(obs, actions, returns, strict=True):
+            if self.d_size >= self.d_capacity:
+                break
+            self.d_obs[self.d_size] = o
+            self.d_actions[self.d_size] = a
+            self.d_returns[self.d_size] = r
+            self.d_size += 1
+
+    @staticmethod
+    def _prioritized(returns: np.ndarray, k: int, rng: np.random.Generator) -> np.ndarray:
+        """Return k indices sampled proportional to (return - min + 1)."""
+        priorities = returns - returns.min() + 1.0
+        return rng.choice(len(returns), size=k, p=priorities / priorities.sum())
+
+    def sample(
+        self, batch: int, demo_fraction: float, rng: np.random.Generator
+    ) -> tuple[np.ndarray, ...]:
+        """Sample, drawing demo_fraction from the permanent demo region."""
+        n_demo = int(batch * demo_fraction) if self.d_size > 0 else 0
+        n_self = batch - n_demo
+        obs_parts, act_parts, ret_parts = [], [], []
+        if n_self > 0 and self.size > 0:
+            i = self._prioritized(self.returns[: self.size], min(n_self, self.size), rng)
+            obs_parts.append(self.obs[i])
+            act_parts.append(self.actions[i])
+            ret_parts.append(self.returns[i])
+        if n_demo > 0:
+            j = self._prioritized(self.d_returns[: self.d_size], n_demo, rng)
+            obs_parts.append(self.d_obs[j])
+            act_parts.append(self.d_actions[j])
+            ret_parts.append(self.d_returns[j])
+        return (
+            np.concatenate(obs_parts),
+            np.concatenate(act_parts),
+            np.concatenate(ret_parts),
+        )
 
 
 def _seed_from_trajectories(
@@ -99,7 +141,7 @@ def _seed_from_trajectories(
                 break
         env.close()
         returns = _discounted_returns(ep_rew, gamma)
-        buffer.add_episode(ep_obs, ep_act, returns)
+        buffer.add_demos(ep_obs, ep_act, returns)
         seeded += len(ep_act)
         logger.info(f"seeded SIL buffer from {path}: score {score:.0f}, {len(ep_act)} transitions")
     return seeded
@@ -167,7 +209,7 @@ def train_sil(cfg: ExperimentConfig) -> dict:
     num_updates = cfg.total_timesteps // batch_size
     obs_shape = (cfg.env.frame_stack, cfg.env.img_size, cfg.env.img_size)
 
-    buffer = SILBuffer(sil.buffer_size, obs_shape)
+    buffer = SILBuffer(sil.buffer_size, obs_shape, sil.demo_buffer_size)
     rng = np.random.default_rng(cfg.seed)
     if sil.seed_trajectories:
         _seed_from_trajectories(
@@ -331,9 +373,9 @@ def train_sil(cfg: ExperimentConfig) -> dict:
                 optimizer.step()
 
         # Self-imitation updates: pull toward high-return buffered transitions.
-        if buffer.size > sil.batch_size:
+        if buffer.size > sil.batch_size or buffer.d_size > sil.batch_size:
             for _ in range(sil.updates_per_iter):
-                s_obs, s_act, s_ret = buffer.sample(sil.batch_size, rng)
+                s_obs, s_act, s_ret = buffer.sample(sil.batch_size, sil.demo_fraction, rng)
                 t_obs = torch.from_numpy(s_obs).to(device)
                 t_act = torch.from_numpy(s_act).to(device)
                 t_ret = torch.from_numpy(s_ret).to(device)

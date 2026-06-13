@@ -90,6 +90,10 @@ class SILConfig(BaseModel):
         default_factory=list, description="Go-Explore trajectory pkls to seed the SIL buffer"
     )
     buffer_size: int = 100_000
+    demo_buffer_size: int = Field(default=60_000, description="Permanent non-evicting demo region")
+    demo_fraction: float = Field(
+        default=0.5, ge=0.0, le=1.0, description="Fraction of each SIL batch drawn from demos"
+    )
     updates_per_iter: int = Field(default=4, ge=0)
     batch_size: int = 512
     vf_coef: float = 0.01
