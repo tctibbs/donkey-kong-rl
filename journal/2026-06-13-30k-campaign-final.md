@@ -83,3 +83,29 @@ fixed.
 The best agent (recurrent, 7,285) is 58x random and far past the only public
 hobbyist reference (about 300). The negative result above 7.3k is unusually
 thorough and paper-defensible.
+
+## Addendum (2026-06-13): search-based DAgger and why two more levers fail
+
+Pursuing a closed-loop 30k policy further, two additional creative levers
+were reasoned through and one was tested:
+
+- Search-based DAgger (ADR 0005, journal 2026-06-13-dagger-round1): relabel
+  the policy's own visited states with a search expert. Round 1 REGRESSED to
+  mean 5,990 (from 7,123). DAgger improves a policy only when the expert
+  beats it; a tractable per-state search expert (random shooting, even with a
+  dense height/board progress potential) is myopic and not better than the
+  already-strong GE3 policy, so its labels inject noise. Building an expert
+  that reliably beats a 7k policy is as hard as the original problem.
+- Potential-based reward shaping (Ng et al. 1999): provably policy-invariant,
+  so it cannot raise the optimum, only accelerate learning toward it. Our
+  wall is reactive EXECUTION under stochasticity, not exploration or credit
+  assignment (demonstrations already reach a 1.00 clear rate), so shaping
+  would not break the ceiling. Not pursued, for that reason.
+
+Conclusion: the closed-loop stochastic-eval ceiling at about 7,285 is robust
+to nine method classes. Exceeding it needs an expert stronger than the policy
+(human demonstrations are the only tractable source) or a fundamentally
+different paradigm/compute scale (model-based planning). The discovered
+30,100 open-loop trajectory stands as the achievable score when execution
+stochasticity is removed; the 7,285 to 30,100 gap is the measured cost of
+robust reactive execution, the project's central quantitative finding.
