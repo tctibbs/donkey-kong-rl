@@ -102,8 +102,16 @@ were reasoned through and one was tested:
   assignment (demonstrations already reach a 1.00 clear rate), so shaping
   would not break the ceiling. Not pursued, for that reason.
 
+DAgger update (2026-06-13, conclusive): round 2 trained with search labels
+driving 50 percent of the data (fixing round 1's 1.1 percent dilution
+confound) degraded to mean 3,638, clear_rate 0.00 (BC fit only 0.282: the
+myopic expert's labels are internally inconsistent). Search-DAgger is
+conclusively closed: a tractable per-state expert cannot beat a 7k policy,
+and a strong enough expert costs as much as the original problem. See
+journal/2026-06-13-dagger-round2-conclusive.md.
+
 Conclusion: the closed-loop stochastic-eval ceiling at about 7,285 is robust
-to nine method classes. Exceeding it needs an expert stronger than the policy
+to ten method classes. Exceeding it needs an expert stronger than the policy
 (human demonstrations are the only tractable source) or a fundamentally
 different paradigm/compute scale (model-based planning). The discovered
 30,100 open-loop trajectory stands as the achievable score when execution
