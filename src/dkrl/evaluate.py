@@ -240,6 +240,94 @@ def evaluate_ensemble(
     return result
 
 
+def evaluate_lstm_checkpoint(
+    checkpoint_path: Path,
+    episodes: int | None = None,
+    seed: int | None = None,
+) -> dict:
+    """Evaluate a recurrent (ppo_lstm) checkpoint under the locked protocol.
+
+    Carries LSTM hidden state across each episode and resets it per env at
+    episode boundaries, so the policy sees coherent sequences exactly as in
+    training.
+
+    Args:
+        checkpoint_path: Path to a ppo_lstm checkpoint.
+        episodes: Override for the number of evaluation episodes.
+        seed: Override for the evaluation seed.
+
+    Returns:
+        Summary statistics dict, including checkpoint provenance.
+    """
+    from dkrl.agents.lstm import LSTMAgent
+
+    ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    cfg = ExperimentConfig.model_validate(ckpt["config"])
+    eval_cfg = cfg.eval
+    n_episodes = episodes if episodes is not None else eval_cfg.episodes
+    eval_seed = seed if seed is not None else eval_cfg.seed
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    agent = LSTMAgent(ckpt["n_actions"], cfg.env.frame_stack, cfg.lstm.hidden_size).to(device)
+    agent.load_state_dict(ckpt["model_state_dict"])
+    agent.eval()
+    torch.manual_seed(eval_seed)
+
+    envs = make_eval_envs(
+        eval_cfg,
+        cfg.env.env_id,
+        cfg.env.img_size,
+        cfg.env.frame_stack,
+        eval_seed,
+        full_action_space=cfg.env.full_action_space,
+    )
+    n = eval_cfg.num_envs
+    stats = EpisodeStats(n)
+    returns: list[float] = []
+    lengths: list[int] = []
+    max_steps: list[float] = []
+
+    obs, _ = envs.reset()
+    state = agent.initial_state(n, device)
+    done = torch.zeros(n, device=device)
+    logger.info(f"evaluating LSTM {checkpoint_path} for {n_episodes} episodes (seed={eval_seed})")
+    while len(returns) < n_episodes:
+        with torch.no_grad():
+            action, _, _, _, state = agent.get_action_and_value(
+                torch.from_numpy(obs).to(device), state, done
+            )
+        obs, _, terminated, truncated, info = envs.step(action.cpu().numpy())
+        done = torch.from_numpy(np.logical_or(terminated, truncated).astype(np.float32)).to(device)
+        for ep_return, ep_length, ep_max in stats.update(terminated, truncated, info):
+            returns.append(ep_return)
+            lengths.append(ep_length)
+            max_steps.append(ep_max)
+    envs.close()
+
+    result = summarize(
+        returns[:n_episodes],
+        lengths[:n_episodes],
+        max_steps[:n_episodes],
+        eval_cfg.clear_reward_threshold,
+    )
+    result.update(
+        {
+            "kind": "eval",
+            "checkpoint": str(checkpoint_path),
+            "run_id": ckpt.get("run_id"),
+            "config_hash": ckpt.get("config_hash"),
+            "git_sha_train": ckpt.get("git_sha"),
+            "eval_seed": eval_seed,
+            "protocol": eval_cfg.model_dump(),
+        }
+    )
+    logger.info(
+        f"lstm eval done: mean={result['return_mean']:.1f} median={result['return_median']:.1f} "
+        f"max={result['return_max']:.0f} clear_rate={result['clear_rate']:.2f}"
+    )
+    return result
+
+
 def random_baseline(
     eval_cfg: EvalConfig,
     env_id: str = "DonkeyKong-v5",

@@ -110,18 +110,33 @@ def main() -> None:
             from dkrl.train.ppo_rnd import train_rnd as train
         elif cfg.algo == "ppo_robustify":
             from dkrl.train.robustify import train_robustify as train
+        elif cfg.algo == "ppo_lstm":
+            from dkrl.train.ppo_lstm import train_lstm as train
         else:
             from dkrl.train.ppo import train
         row = train(cfg)
         append_row(row)
 
     elif args.command == "evaluate":
-        from dkrl.evaluate import evaluate_checkpoint
+        import torch as _torch
+
         from dkrl.ledger import git_sha
         from dkrl.log import setup_logging
 
         setup_logging("eval")
-        result = evaluate_checkpoint(args.checkpoint, episodes=args.episodes, seed=args.seed)
+        _algo = ExperimentConfig.model_validate(
+            _torch.load(args.checkpoint, map_location="cpu", weights_only=False)["config"]
+        ).algo
+        if _algo == "ppo_lstm":
+            from dkrl.evaluate import evaluate_lstm_checkpoint
+
+            result = evaluate_lstm_checkpoint(
+                args.checkpoint, episodes=args.episodes, seed=args.seed
+            )
+        else:
+            from dkrl.evaluate import evaluate_checkpoint
+
+            result = evaluate_checkpoint(args.checkpoint, episodes=args.episodes, seed=args.seed)
         result["git_sha"] = git_sha()
         result["finished_at"] = datetime.now(UTC).isoformat(timespec="seconds")
         append_row(result)

@@ -80,6 +80,12 @@ class RNDConfig(BaseModel):
     )
 
 
+class LSTMConfig(BaseModel):
+    """Recurrent-policy hyperparameters (used when algo is ppo_lstm)."""
+
+    hidden_size: int = 128
+
+
 class RobustifyConfig(BaseModel):
     """Backward-curriculum restore-reset training (Go-Explore phase 2)."""
 
@@ -145,12 +151,13 @@ class ExperimentConfig(BaseModel):
     name: str
     seed: int = 1
     total_timesteps: int = 10_000_000
-    algo: Literal["ppo", "ppo_rnd", "ppo_robustify"] = "ppo"
+    algo: Literal["ppo", "ppo_rnd", "ppo_robustify", "ppo_lstm"] = "ppo"
     env: EnvConfig = EnvConfig()
     ppo: PPOConfig = PPOConfig()
     rnd: RNDConfig = RNDConfig()
     bc: BCConfig = BCConfig()
     robustify: RobustifyConfig = RobustifyConfig()
+    lstm: LSTMConfig = LSTMConfig()
     eval: EvalConfig = EvalConfig()
     cuda: bool = True
     torch_deterministic: bool = True
