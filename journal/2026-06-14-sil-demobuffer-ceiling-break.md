@@ -65,6 +65,20 @@ policy. SIL is the mechanism Go-Explore was designed to pair with, and it delive
   already 26,100 and p95 is 24,500, so deep play is reliable when it survives the
   screen-1-to-2 transition. Closing the 48% low cluster is the remaining lever.
 
+## Best closed-loop episode: 31,200 (the 30k range, reached reactively)
+
+An 8-episode protocol-compliant render of the same checkpoint (seed 1000, sticky
+0.25, no-op start, full action set, single env) produced episode returns of
+16,500 / 31,200 / 16,100 / 7,000 / 10,000 / 6,300 / 17,300 / 19,400. The 31,200
+episode (3,258 agent steps) is the first CLOSED-LOOP, stochastic-play episode in the
+30k range, distinct from the open-loop Go-Explore discovery trajectory (30,100). It
+clears roughly seven screens (about three-and-a-half barrels-to-rivets loops; the 2600
+port has only those two boards and loops them). The 100-episode protocol eval gave a
+max of 26,100; this render drew a deeper tail. So the agent's reactive capability
+touches the goal at the episode level. The remaining gap to a 30k MEAN is consistency,
+the 48% of episodes that die at the screen-1-to-2 transition. Documentation clip:
+videos/needle_movers/sil_demobuf_31200_tail.mp4 (final ~9s) plus _best.mp4 (full run).
+
 ## Next levers (toward 30k mean)
 
 1. Multi-seed the current recipe for a rigorous headline (mean/std/IQM via rliable).
