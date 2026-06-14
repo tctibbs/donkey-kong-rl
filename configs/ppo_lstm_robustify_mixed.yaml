@@ -1,0 +1,27 @@
+# Recurrent robustification with mixed resets (the fix for the 206 collapse).
+# 50% of episodes start from a real game start (preserving from-start
+# competence), 50% restore deep bank states (practicing rivets/round-2 play
+# under sticky noise with memory). Warm-started from the best recurrent agent
+# (7,285). The earlier all-restore version scored 1,600+ per deep segment but
+# forgot how to start; this keeps both skills.
+name: ppo_lstm_robustify_mixed_18m
+seed: 1
+total_timesteps: 18000000
+algo: ppo_robustify
+env:
+  num_envs: 36
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+lstm:
+  hidden_size: 256
+robustify:
+  recurrent: true
+  init_from: checkpoints/ppo_lstm_distill_25m_s1_20260613_042132/final.pt
+  bank_path: data/state_bank_deep.pkl
+  start_reset_prob: 0.5
+  start_window: 0.25
+  schedule_frac: 0.7
+  max_episode_steps: 3000
+checkpoint_interval_updates: 400
+track: true

@@ -1,0 +1,25 @@
+# Rivets-screen expert: backward-curriculum PPO from restored bank states
+# (Go-Explore phase 2, stage-expert decomposition). Trains ONLY on
+# rivets-screen states from 20.1k trajectories, starting near upcoming
+# reward and receding; real sticky noise; BC init from robust demos but no
+# imitation floor (trial-and-error is the point).
+name: ppo_rivets_expert_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo_robustify
+env:
+  num_envs: 12
+  reward_transform: scale
+  reward_scale: 0.01
+robustify:
+  bank_path: data/state_bank.pkl
+  board_filter: 1
+  start_window: 0.15
+  schedule_frac: 0.7
+  max_episode_steps: 2000
+bc:
+  enabled: true
+  demo_path: data/demos_det_v1.npz
+  epochs: 10
+checkpoint_interval_updates: 400
+track: true

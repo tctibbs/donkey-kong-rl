@@ -1,0 +1,24 @@
+# Go-Explore round 1 (30k push). Demos: top 25 explored trajectories
+# (deterministic state-restore search, best 9,700, replay-verified) merged
+# with agent self-demos. Regenerate: dkrl explore (seeds 1-10, 150k iters)
+# then dkrl replay-demos --min-score 8000. Scale transform for bonus
+# visibility; the BC floor holds the deep behaviors while PPO learns to
+# execute them under sticky actions.
+name: ppo_goexplore1_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+bc:
+  enabled: true
+  demo_path: data/demos_goexplore_r1.npz
+  epochs: 10
+  aux_coef: 1.0
+  aux_anneal_updates: 400
+  aux_coef_floor: 0.15
+checkpoint_interval_updates: 400
+track: true
