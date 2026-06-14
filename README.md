@@ -9,6 +9,12 @@ rigorous, reproducible study of that single game: a configuration-driven trainin
 pipeline, a controlled ablation suite, and the artifacts a white paper needs (results
 ledger, learning curves, evaluation videos, experiment journal).
 
+![Trained Donkey Kong agent scoring 44,800 in a single closed-loop episode](assets/donkey_kong_44800_run.gif)
+
+The trained policy under the stochastic evaluation protocol, looping both stages
+(barrels and rivets) for a 44,800-point run. Shown at 6x speed; the girders recolor
+each lap as the game ramps difficulty.
+
 ## Status
 
 - Phase 0 (pipeline) and Phase 1 (PPO baseline) complete (tags `v0.1.0-pipeline`,
@@ -29,16 +35,23 @@ ledger, learning curves, evaluation videos, experiment journal).
   over 300 protocol episodes: mean 6,884 (95 percent CI 6,724 to 7,027), IQM
   7,071, median 7,100, screen-1 clear rate 0.97. Draft methods and results:
   `docs/paper/methods-and-results.md`.
-- Headline (two distinct results, kept separate):
-  - Robust learned policy under the stochastic Machado protocol: best mean
-    7,285 (recurrent LSTM distilled from the Go-Explore agent), 100 percent
-    screen-1 clear, 58x random. This is the ceiling for a closed-loop policy
-    across eight method classes.
-  - Discovery (Go-Explore, deterministic open-loop): a verified, reproducible
-    trajectory scoring 30,100 (`dkrl replay-video`, explored 30,100 =
-    replayed 30,100). The agent reaches the 30k range as a discovered
-    trajectory; the gap to the 7,285 robust policy is the measured cost of
-    robust reactive execution under action-repeat noise.
+- Headline: a trained closed-loop policy reaches the 30k range under the
+  stochastic Machado protocol. Self-Imitation Learning seeded from a permanent
+  (non-evicting) demonstration buffer, applied as expert iteration, lifts the
+  100-episode protocol-eval mean from the prior 7,285 ceiling to 22,820 (median
+  24,400, max 43,700, 100 percent screen-1 clear, single seed). The progression
+  across self-imitation rounds is 7,285 (the ceiling that held across ten method
+  classes) to 11,293 (SIL with a permanent demo buffer) to 22,820 (iterated SIL
+  with an enriched 13-trajectory deep-demo buffer). One in five evaluation
+  episodes reaches 30,000 or more, and the best episode (43,700) exceeds the
+  open-loop Go-Explore discovery trajectory that seeded it (30,100): the reactive
+  policy now loops the two-screen game deeper than the search ever found. See
+  `journal/2026-06-14-30k-reached-iterated-sil.md`.
+- Earlier closed-loop ceiling (now superseded): across eight method classes the
+  best robust policy was mean 7,285 (recurrent LSTM distilled from the Go-Explore
+  agent), with the open-loop Go-Explore discovery trajectory at 30,100
+  (`dkrl replay-video`). Self-imitation closed most of that discovery-to-policy
+  gap, which had been the campaign's central open question.
 
 ## Hardware target
 
