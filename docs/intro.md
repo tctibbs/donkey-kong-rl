@@ -1,8 +1,8 @@
 # Start here
 
 This project is a personal experiment in how far I can get a reinforcement learning agent to
-play Atari Donkey Kong on a single GPU, and in understanding which design choices actually
-make a difference. It is written to be read as a series. If you want the story, go to the
+play Atari Donkey Kong on one modest machine, and in understanding which design choices
+actually make a difference. It is written to be read as a series. If you want the story, go to the
 [experiments index](../experiments/README.md) and read in order. If you want the punchline,
 it is at the bottom of this page.
 

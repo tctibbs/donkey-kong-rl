@@ -4,8 +4,9 @@ Persistent rules for this repository. These survive across sessions and override
 
 ## Project
 
-A personal project studying how far a single-GPU RL setup can push `ALE/DonkeyKong-v5`,
-and which design choices drive the results. I keep a reproducible experiment suite and a
+A personal project studying how far one modest machine (an old GPU, 12 CPU cores, with
+CPU-bound Atari stepping as the real throughput limit) can push `ALE/DonkeyKong-v5`, and
+which design choices drive the results. I keep a reproducible experiment suite and a
 running write-up of what mattered (`docs/writeup.md`); turning that into a white paper is
 a personal goal kept in my own notes, not the focus of the repo. Treat "I can learn what
 mattered" as a first-class requirement, equal to raw score.

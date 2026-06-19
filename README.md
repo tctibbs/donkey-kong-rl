@@ -1,7 +1,7 @@
 # Donkey Kong RL
 
 A personal experiment in how far I can get a reinforcement learning agent to play
-Atari Donkey Kong on a single GPU, and figuring out what actually makes a difference.
+Atari Donkey Kong on one modest machine, and figuring out what actually makes a difference.
 
 Donkey Kong (`ALE/DonkeyKong-v5`) is a hard game for RL. Rewards are sparse, episodes
 run long, and it sits outside the usual Atari benchmark set, so there is not much to
@@ -23,11 +23,16 @@ of 22,820 with a best episode of 43,700, the 30k range, by a trained closed-loop
 The whole arc, each experiment a self-contained write-up with its config, numbers, and
 figures, is in **[experiments/](experiments/README.md)**.
 
-## Hardware target
+## Hardware
 
-Single machine: NVIDIA GTX 1080 Ti (Pascal), 12 CPU cores. The Atari simulation is
-CPU-bound; [EnvPool](https://github.com/sail-sg/envpool) provides the vectorized
-environment throughput. The learner runs on the GPU.
+One modest machine: an aging NVIDIA GTX 1080 Ti (Pascal) and 12 CPU cores. The binding
+constraint is not the GPU. Atari stepping is CPU-bound, so the 12 cores set the pace:
+throughput tops out around 5,000 environment steps per second, with
+[EnvPool](https://github.com/sail-sg/envpool) doing the vectorized stepping. The
+Nature-CNN policy is small enough that the old GPU is never the bottleneck; it just runs
+the learner updates. The practical consequences run through the whole project: training
+is gated by CPU env-throughput, runs go one at a time, and the levers that mattered were
+algorithmic, not more compute.
 
 ## Setup
 
