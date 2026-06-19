@@ -9,6 +9,7 @@ warm-starts.
 All coordinates are raw RAM units. Mario y grows downward.
 """
 
+import pickle
 from pathlib import Path
 from typing import Any, cast
 
@@ -329,5 +330,116 @@ def collect_self_demos(
         f"self-demos saved: kept {len(kept)} of {episodes}, returns "
         f"{result['kept_return_min']:.0f}..{result['kept_return_max']:.0f} "
         f"(mean {result['kept_return_mean']:.0f}), {result['samples']} samples, {out_path}"
+    )
+    return result
+
+
+def harvest_self_trajectories(
+    checkpoint_path: Path,
+    out_path: Path,
+    episodes: int = 300,
+    keep: int = 25,
+    seed: int = 12000,
+) -> dict:
+    """Harvest a trained agent's best episodes as full SIL demonstrations.
+
+    Like :func:`collect_self_demos`, but records per-step rewards and keeps the
+    episode structure, so each kept episode can be replayed into a
+    self-imitation buffer with a proper discounted return-to-go. Output is a
+    pickle of episodes (observation, action, reward arrays), not a flat BC npz.
+
+    Args:
+        checkpoint_path: Trained checkpoint to roll out.
+        out_path: Output ``.pkl`` path.
+        episodes: Total episodes to sample.
+        keep: Number of top-return episodes to keep.
+        seed: Eval pool seed (also seeds policy sampling).
+
+    Returns:
+        Dict with kept-episode returns and dataset sizes.
+    """
+    import torch
+
+    from dkrl.config import ExperimentConfig
+    from dkrl.envs import make_eval_envs
+    from dkrl.evaluate import load_policy
+
+    ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    cfg = ExperimentConfig.model_validate(ckpt["config"])
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    policy = load_policy(ckpt, cfg, device)
+    torch.manual_seed(seed)
+    envs = make_eval_envs(
+        cfg.eval,
+        cfg.env.env_id,
+        cfg.env.img_size,
+        cfg.env.frame_stack,
+        seed,
+        full_action_space=cfg.env.full_action_space,
+    )
+    n = cfg.eval.num_envs
+
+    buf_obs: list[list[np.ndarray]] = [[] for _ in range(n)]
+    buf_act: list[list[int]] = [[] for _ in range(n)]
+    buf_rew: list[list[float]] = [[] for _ in range(n)]
+    returns_acc = np.zeros(n, dtype=np.float64)
+    kept: list[dict[str, Any]] = []
+    done_eps = 0
+
+    obs, _ = envs.reset()
+    while done_eps < episodes:
+        actions = policy(torch.from_numpy(obs).to(device)).cpu().numpy()
+        for i in range(n):
+            buf_obs[i].append(obs[i].astype(np.uint8))
+            buf_act[i].append(int(actions[i]))
+        obs, _, terminated, truncated, info = envs.step(actions)
+        step_reward = info["reward"]
+        returns_acc += step_reward
+        for i in range(n):
+            buf_rew[i].append(float(step_reward[i]))
+        real_done = np.logical_or(info.get("terminated", terminated), truncated)
+        for i in np.nonzero(real_done)[0]:
+            done_eps += 1
+            ep_return = float(returns_acc[i])
+            worst = kept[0]["return"] if len(kept) >= keep else None
+            if worst is None or ep_return > worst:
+                kept.append(
+                    {
+                        "return": ep_return,
+                        "obs": np.stack(buf_obs[i]),
+                        "actions": np.asarray(buf_act[i], np.int64),
+                        "rewards": np.asarray(buf_rew[i], np.float32),
+                    }
+                )
+                kept.sort(key=lambda e: e["return"])
+                if len(kept) > keep:
+                    kept.pop(0)
+            returns_acc[i] = 0.0
+            buf_obs[i] = []
+            buf_act[i] = []
+            buf_rew[i] = []
+            if done_eps % 50 == 0:
+                floor = kept[0]["return"] if kept else float("nan")
+                logger.info(f"harvest: {done_eps}/{episodes} episodes, kept floor {floor:.0f}")
+    envs.close()
+
+    returns = [e["return"] for e in kept]
+    samples = int(sum(len(e["actions"]) for e in kept))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("wb") as f:
+        pickle.dump({"episodes": kept}, f)
+    result = {
+        "episodes_sampled": episodes,
+        "episodes_kept": len(kept),
+        "kept_return_min": float(min(returns)),
+        "kept_return_mean": float(np.mean(returns)),
+        "kept_return_max": float(max(returns)),
+        "samples": samples,
+        "path": str(out_path),
+    }
+    logger.info(
+        f"harvest saved: kept {len(kept)} of {episodes}, returns "
+        f"{result['kept_return_min']:.0f}..{result['kept_return_max']:.0f} "
+        f"(mean {result['kept_return_mean']:.0f}), {samples} transitions, {out_path}"
     )
     return result

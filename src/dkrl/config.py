@@ -89,6 +89,10 @@ class SILConfig(BaseModel):
     seed_trajectories: list[str] = Field(
         default_factory=list, description="Go-Explore trajectory pkls to seed the SIL buffer"
     )
+    seed_self_demos: list[str] = Field(
+        default_factory=list,
+        description="Harvested self-demo pkls (the agent's own episodes) to seed the demo buffer",
+    )
     buffer_size: int = 100_000
     demo_buffer_size: int = Field(default=60_000, description="Permanent non-evicting demo region")
     demo_fraction: float = Field(
