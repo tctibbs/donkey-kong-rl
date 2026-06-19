@@ -39,6 +39,16 @@ def main() -> None:
     p_plot.add_argument("metrics", type=Path, nargs="+")
     p_plot.add_argument("--out", type=Path, default=Path("results/plots/learning_curves.png"))
 
+    p_dist = sub.add_parser("plot-dist", help="Plot the eval score distribution for a run")
+    p_dist.add_argument(
+        "--run", type=str, required=True, help="Run id with an eval row in the ledger"
+    )
+    p_dist.add_argument("--out", type=Path, default=Path("results/plots/score_distribution.png"))
+    p_dist.add_argument("--ledger", type=Path, default=Path("results/ledger.jsonl"))
+    p_dist.add_argument(
+        "--goal", type=float, default=None, help="Optional reference line, e.g. 30000"
+    )
+
     p_stats = sub.add_parser("stats", help="Aggregate eval rows (IQM, bootstrap CIs)")
     p_stats.add_argument("--name", type=str, required=True, help="Run-id prefix to aggregate")
 
@@ -182,6 +192,18 @@ def main() -> None:
         setup_logging("plot")
         out = plot_learning_curves(args.metrics, args.out)
         logger.info(f"plot written to {out}")
+
+    elif args.command == "plot-dist":
+        from dkrl.log import setup_logging
+        from dkrl.plots import plot_score_distribution, read_eval_returns
+
+        setup_logging("plot-dist")
+        returns = read_eval_returns(args.ledger, args.run)
+        if not returns:
+            logger.error(f"no eval returns found for run {args.run} in {args.ledger}")
+            raise SystemExit(1)
+        out = plot_score_distribution(returns, args.out, goal=args.goal)
+        logger.info(f"distribution plot written to {out} ({len(returns)} episodes)")
 
     elif args.command == "stats":
         import json
