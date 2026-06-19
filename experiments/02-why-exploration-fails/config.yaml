@@ -1,0 +1,14 @@
+# E3: RND exploration on top of the scale transform (ADR 0003 contingency,
+# activated by the E1 no-op finding: the agent must DISCOVER its first screen
+# clear before any reward transform can matter). Single delta vs E1: +RND.
+name: ppo_rnd_10m
+seed: 1
+total_timesteps: 10000000
+algo: ppo_rnd
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+checkpoint_interval_updates: 200
+track: true

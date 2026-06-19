@@ -1,0 +1,8 @@
+metric,value,seeds,timesteps,run_id
+mean_return,22820,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019
+median_return,24400,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019
+max_return,43700,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019
+std_return,9523,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019
+clear_rate,1.00,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019
+episodes_ge_30k_pct,20,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019
+train_return_best,25416,1,25000000,ppo_sil_deepbuf_25m_s1_20260614_104019

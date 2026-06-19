@@ -1,0 +1,13 @@
+metric,value,seeds,timesteps,run_id
+mean_return,5990,1,15000000,ppo_dagger_r1_15m_s1_20260613_134841
+std_return,1907,1,15000000,ppo_dagger_r1_15m_s1_20260613_134841
+median_return,6400,1,15000000,ppo_dagger_r1_15m_s1_20260613_134841
+max_return,8000,1,15000000,ppo_dagger_r1_15m_s1_20260613_134841
+clear_rate,0.92,1,15000000,ppo_dagger_r1_15m_s1_20260613_134841
+bc_accuracy,0.893,1,15000000,ppo_dagger_r1_15m_s1_20260613_134841
+mean_return,3638,1,15000000,ppo_dagger_r2_15m_s1_20260613_160117
+std_return,838,1,15000000,ppo_dagger_r2_15m_s1_20260613_160117
+median_return,4100,1,15000000,ppo_dagger_r2_15m_s1_20260613_160117
+max_return,4600,1,15000000,ppo_dagger_r2_15m_s1_20260613_160117
+clear_rate,0.00,1,15000000,ppo_dagger_r2_15m_s1_20260613_160117
+bc_accuracy,0.282,1,15000000,ppo_dagger_r2_15m_s1_20260613_160117

@@ -1,13 +1,12 @@
-# donkey-kong-rl
+# Donkey Kong RL
 
-How far can a modern, single-GPU reinforcement learning setup push Atari Donkey Kong,
-and which design choices actually move the needle?
+A personal experiment in how far I can get a reinforcement learning agent to play
+Atari Donkey Kong on a single GPU, and figuring out what actually makes a difference.
 
-`ALE/DonkeyKong-v5` is a sparse-reward, long-horizon game outside the canonical
-Atari-57 benchmark set, so there is almost no published baseline. This repository is a
-rigorous, reproducible study of that single game: a configuration-driven training
-pipeline, a controlled ablation suite, and the artifacts a white paper needs (results
-ledger, learning curves, evaluation videos, experiment journal).
+Donkey Kong (`ALE/DonkeyKong-v5`) is a hard game for RL. Rewards are sparse, episodes
+run long, and it sits outside the usual Atari benchmark set, so there is not much to
+compare against. I wanted to see how far I could push it, keep everything reproducible,
+and leave an honest trail of what worked and what did not.
 
 ![Trained Donkey Kong agent scoring 44,800 in a single closed-loop episode](assets/donkey_kong_44800_run.gif)
 
@@ -15,43 +14,14 @@ The trained policy under the stochastic evaluation protocol, looping both stages
 (barrels and rivets) for a 44,800-point run. Shown at 6x speed; the girders recolor
 each lap as the game ramps difficulty.
 
-## Status
+## Results
 
-- Phase 0 (pipeline) and Phase 1 (PPO baseline) complete (tags `v0.1.0-pipeline`,
-  `v0.2.0-ppo-baseline`).
-- Random baseline: mean 122 (100 protocol episodes). Plain PPO at 10M steps: mean
-  4,027 but a 0.00 screen-1 clear rate (it farms barrel jumps; see the journal).
-- Phase 2 complete: a systematic ladder of interventions (reward transforms, RND,
-  entropy, action sets, behavior cloning variants) shows generic exploration never
-  produces a single screen clear. The winning recipe is scripted-demonstration
-  kickstarting: BC warm-start plus an annealed-to-a-floor BC auxiliary loss with
-  two-screen demos. Best agent: mean 5,269, median 5,500, 93 percent screen-1
-  clear rate over 100 protocol episodes.
-- Phase 3 (ablations): the BC pressure floor is the load-bearing component
-  (removing it collapses clearing to zero; inverted-U dose response peaking at
-  0.15); the reward transform is irrelevant once behavior is demonstrated
-  (clip vs scale within seed noise across 3 seeds each).
-- Phase 4 (final agent): the production recipe at 25M steps, 3 seeds, pooled
-  over 300 protocol episodes: mean 6,884 (95 percent CI 6,724 to 7,027), IQM
-  7,071, median 7,100, screen-1 clear rate 0.97. Draft methods and results:
-  `docs/paper/methods-and-results.md`.
-- Headline: a trained closed-loop policy reaches the 30k range under the
-  stochastic Machado protocol. Self-Imitation Learning seeded from a permanent
-  (non-evicting) demonstration buffer, applied as expert iteration, lifts the
-  100-episode protocol-eval mean from the prior 7,285 ceiling to 22,820 (median
-  24,400, max 43,700, 100 percent screen-1 clear, single seed). The progression
-  across self-imitation rounds is 7,285 (the ceiling that held across ten method
-  classes) to 11,293 (SIL with a permanent demo buffer) to 22,820 (iterated SIL
-  with an enriched 13-trajectory deep-demo buffer). One in five evaluation
-  episodes reaches 30,000 or more, and the best episode (43,700) exceeds the
-  open-loop Go-Explore discovery trajectory that seeded it (30,100): the reactive
-  policy now loops the two-screen game deeper than the search ever found. See
-  `journal/2026-06-14-30k-reached-iterated-sil.md`.
-- Earlier closed-loop ceiling (now superseded): across eight method classes the
-  best robust policy was mean 7,285 (recurrent LSTM distilled from the Go-Explore
-  agent), with the open-loop Go-Explore discovery trajectory at 30,100
-  (`dkrl replay-video`). Self-imitation closed most of that discovery-to-policy
-  gap, which had been the campaign's central open question.
+Plain PPO farms 100-point barrel jumps and never climbs (mean 4,027, zero screen clears).
+Ten experiments later, self-imitation from a permanent demonstration buffer reaches a mean
+of 22,820 with a best episode of 43,700, the 30k range, by a trained closed-loop policy.
+
+The whole arc, each experiment a self-contained write-up with its config, numbers, and
+figures, is in **[experiments/](experiments/README.md)**.
 
 ## Hardware target
 

@@ -1,0 +1,8 @@
+metric,value,seeds,timesteps,run_id
+mean,11293,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247
+median,9900,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247
+max,26100,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247
+std,5820,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247
+clear_rate,1.00,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247
+train_return_100_final,12411,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247
+train_return_100_best,13652,1,15000000,ppo_sil_demobuf_15m_s1_20260613_210247

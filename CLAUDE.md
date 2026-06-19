@@ -4,10 +4,11 @@ Persistent rules for this repository. These survive across sessions and override
 
 ## Project
 
-Research codebase studying how far a single-GPU RL setup can push `ALE/DonkeyKong-v5`,
-and which design choices drive the results. The output is a white paper backed by a
-reproducible experiment suite. Treat "I can learn what mattered" as a first-class
-requirement, equal to raw score.
+A personal project studying how far a single-GPU RL setup can push `ALE/DonkeyKong-v5`,
+and which design choices drive the results. I keep a reproducible experiment suite and a
+running write-up of what mattered (`docs/writeup.md`); turning that into a white paper is
+a personal goal kept in my own notes, not the focus of the repo. Treat "I can learn what
+mattered" as a first-class requirement, equal to raw score.
 
 ## Commit rules
 
@@ -49,7 +50,13 @@ The repo must always be ready to flip public with zero cleanup:
 
 ## Memory system
 
-- Experiment journal under `journal/`: one lesson per file, one-line summary at top.
+- Experiment write-ups under `experiments/NN-slug/writeup.md`: one experiment per folder,
+  co-located with its `config.yaml`, `results.csv`, and `figures/`. One-line takeaway at the
+  top, in the natural article voice of the existing folders. Add new ones to the
+  `experiments/README.md` index, and clone `experiments/_TEMPLATE/` for the structure.
+- Raw, dated lab notes stay under `journal/` (one lesson per file); the polished articles in
+  `experiments/` are built from them. Cross-cutting prose (intro, methodology, glossary) lives
+  in `docs/`.
 - Design decisions as ADRs under `docs/adr/`.
 - Read these before repeating work. Update rather than duplicate. Delete wrong notes.
 

@@ -1,0 +1,8 @@
+metric,value,seeds,timesteps,run_id
+mean_episode_return,7285,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132
+median_episode_return,7700,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132
+max_episode_return,8100,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132
+min_episode_return,5100,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132
+std_episode_return,737,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132
+clear_rate,1.00,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132
+distill_action_match_accuracy,0.887,1,25000000,ppo_lstm_distill_25m_s1_20260613_042132

@@ -1,0 +1,10 @@
+metric,value,seeds,timesteps,run_id
+mean_return,4027,1,10000000,ppo_baseline_10m_s1_20260611_012915
+return_std,458,1,10000000,ppo_baseline_10m_s1_20260611_012915
+median_return,4200,1,10000000,ppo_baseline_10m_s1_20260611_012915
+max_return,4500,1,10000000,ppo_baseline_10m_s1_20260611_012915
+min_return,2200,1,10000000,ppo_baseline_10m_s1_20260611_012915
+screen1_clear_rate,0.00,1,10000000,ppo_baseline_10m_s1_20260611_012915
+max_single_step_reward,100,1,10000000,ppo_baseline_10m_s1_20260611_012915
+random_baseline,122,0,0,random
+train_return_100_best,4067,1,10000000,ppo_baseline_10m_s1_20260611_012915
