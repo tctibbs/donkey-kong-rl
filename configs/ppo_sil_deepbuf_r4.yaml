@@ -1,0 +1,34 @@
+# Iterated SIL round 4: imitate the agent's OWN deep play. Round 3 reached mean 30,887
+# (max 59,200), and its best episodes score 50,700 to 69,000 (mean 55,133). The policy now
+# plays far deeper than the 30k Go-Explore demos it was trained on, so its own episodes are
+# the better teacher. This continues from the round-3 checkpoint with the permanent demo
+# buffer seeded by BOTH the 13 Go-Explore trajectories (a diversity anchor) and the agent's
+# own harvested 50-69k episodes (data/self_demos_r3.pkl, the depth driver). Return-weighted
+# demo sampling favors the deepest demos, so the 55k self-play dominates the 30k anchors.
+name: ppo_sil_deepbuf_r4_50m
+seed: 1
+total_timesteps: 50000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_r3_50m_s1_20260619_121006/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w74.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d3_w33.pkl
+  seed_self_demos:
+    - data/self_demos_r3.pkl
+  buffer_size: 120000
+  demo_buffer_size: 120000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 400
+track: true
