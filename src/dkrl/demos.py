@@ -340,20 +340,29 @@ def harvest_self_trajectories(
     episodes: int = 300,
     keep: int = 25,
     seed: int = 12000,
+    min_return: float = 0.0,
+    max_return: float | None = None,
 ) -> dict:
-    """Harvest a trained agent's best episodes as full SIL demonstrations.
+    """Harvest a trained agent's episodes as full SIL demonstrations.
 
     Like :func:`collect_self_demos`, but records per-step rewards and keeps the
     episode structure, so each kept episode can be replayed into a
     self-imitation buffer with a proper discounted return-to-go. Output is a
     pickle of episodes (observation, action, reward arrays), not a flat BC npz.
 
+    Episodes are filtered to the ``[min_return, max_return]`` band before
+    keeping the top ``keep`` of them. The band lets you anchor demos at a
+    REACHABLE depth (above the current plateau but below the rare deep tail
+    that destabilizes self-imitation) rather than always taking the deepest.
+
     Args:
         checkpoint_path: Trained checkpoint to roll out.
         out_path: Output ``.pkl`` path.
         episodes: Total episodes to sample.
-        keep: Number of top-return episodes to keep.
+        keep: Number of top-return in-band episodes to keep.
         seed: Eval pool seed (also seeds policy sampling).
+        min_return: Discard episodes scoring below this raw return.
+        max_return: Discard episodes scoring above this raw return (None = no cap).
 
     Returns:
         Dict with kept-episode returns and dataset sizes.
@@ -401,8 +410,9 @@ def harvest_self_trajectories(
         for i in np.nonzero(real_done)[0]:
             done_eps += 1
             ep_return = float(returns_acc[i])
+            in_band = ep_return >= min_return and (max_return is None or ep_return <= max_return)
             worst = kept[0]["return"] if len(kept) >= keep else None
-            if worst is None or ep_return > worst:
+            if in_band and (worst is None or ep_return > worst):
                 kept.append(
                     {
                         "return": ep_return,

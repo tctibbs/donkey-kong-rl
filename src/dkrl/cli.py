@@ -76,6 +76,8 @@ def main() -> None:
     p_harvest.add_argument("--episodes", type=int, default=300)
     p_harvest.add_argument("--keep", type=int, default=25)
     p_harvest.add_argument("--seed", type=int, default=12000)
+    p_harvest.add_argument("--min-return", type=float, default=0.0)
+    p_harvest.add_argument("--max-return", type=float, default=None)
 
     p_exp = sub.add_parser("explore", help="Go-Explore trajectory search (demo generation)")
     p_exp.add_argument("--out", type=Path, required=True)
@@ -261,6 +263,8 @@ def main() -> None:
             episodes=args.episodes,
             keep=args.keep,
             seed=args.seed,
+            min_return=args.min_return,
+            max_return=args.max_return,
         )
         result.update(
             {
