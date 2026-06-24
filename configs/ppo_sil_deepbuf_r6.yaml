@@ -1,0 +1,41 @@
+# Iterated SIL round 6: GENTLE continuation + band-filtered demos. Rounds 4 and 5 both
+# collapsed (~10k eval) when continuing from the round-3 best (mean 30,887). Round 5 proved
+# the demos were not the cause: the aggressive warm-start (a fresh SIL run at full LR 2.5e-4,
+# re-annealing) perturbs the loaded 30.9k checkpoint too hard, and it cannot recover. Fix:
+#   1. GENTLE continuation: learning_rate 5e-5, anneal_lr false (small perturbation, stays
+#      near the loaded policy and lets SIL improve it gradually).
+#   2. BAND-FILTERED demos (35k-46k): deeper than the saturated 30k Go-Explore demos but
+#      within the policy's reach (its p75 is ~39k), avoiding round 4's destabilizing 50-69k.
+#   3. demo_fraction 0.3 (gentler imitation pressure).
+# Short 25M validation run; extend only if it stays stable past update 1600 (round 5's
+# collapse point) and climbs above 30,887.
+name: ppo_sil_deepbuf_r6_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+ppo:
+  learning_rate: 0.00005
+  anneal_lr: false
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_r3_50m_s1_20260619_121006/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  seed_self_demos:
+    - data/self_demos_r3_band.pkl
+  buffer_size: 120000
+  demo_buffer_size: 120000
+  demo_fraction: 0.3
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 200
+track: true
