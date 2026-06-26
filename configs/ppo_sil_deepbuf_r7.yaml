@@ -1,0 +1,42 @@
+# Iterated SIL round 7: the decisive stability test. Rounds 4/5/6 all collapsed continuing
+# past round-3's mean 30,887. The collapse is a self-imitation death-spiral: the policy
+# imitates its own degrading self-play, the value baseline drifts down, and shallower play
+# looks "positive advantage", reinforcing the decay. Gentle LR (round 6) delayed it but did
+# not stop it (peaked 31,418, then decayed to ~9.5k). The remaining lever is a STRONGER demo
+# ANCHOR so the permanent good-demo region dominates the self-play spiral:
+#   - demo_fraction 0.6 (was 0.3 in round 6, 0.5 in round 5): most of every SIL batch is the
+#     fixed good demos, not the drifting self-play.
+#   - learning_rate 5e-5, anneal_lr false (gentle, kept from round 6).
+#   - band-filtered demos at ~45.5k (reachable depth).
+# 25M validation with an early-collapse watchdog. If this collapses too, ~30k is the iterated
+# SIL ceiling (4 attempts across the hyperparameter space) and the next lever is recurrent SIL.
+name: ppo_sil_deepbuf_r7_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+ppo:
+  learning_rate: 0.00005
+  anneal_lr: false
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_r3_50m_s1_20260619_121006/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  seed_self_demos:
+    - data/self_demos_r3_band.pkl
+  buffer_size: 120000
+  demo_buffer_size: 120000
+  demo_fraction: 0.6
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 200
+track: true
