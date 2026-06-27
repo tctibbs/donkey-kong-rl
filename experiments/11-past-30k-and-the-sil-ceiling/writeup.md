@@ -1,8 +1,9 @@
 # Experiment 11: Past 30k, and the ceiling of iterated self-imitation
 
-> One-line takeaway: one more round of iteration lifted the mean from 22,820 to 30,887
-> (with a 59,200 single-episode max, so 50k is reachable in one game), but six attempts to
-> push the mean any further all collapsed. About 30k is a hard ceiling for this method.
+> One-line takeaway: one more round of iteration lifted the mean into the low-30,000s
+> (3-seed IQM 34,033, pooled mean 32,420, with a 59,500 single-episode max, so 50k is
+> reachable in one game), but six attempts to push the mean any further all collapsed.
+> About 30k is a hard ceiling for this method.
 
 [Experiment 10](../10-iterated-sil-30k/writeup.md) reached a mean of 22,820 by self-imitating
 a permanent buffer of deep demonstrations, and its training curve was still rising when the
@@ -52,18 +53,19 @@ sil:
 
 ## Results
 
-Round 3 continued the stable climb and settled at a new best.
+Round 3 continued the stable climb and settled at a new best. The recipe is stable, so I ran
+it at three seeds; the headline pools all 300 protocol episodes.
 
-| Metric | Round 3 |
+| Metric | Round 3 (3 seeds, 300 episodes) |
 |---|---|
-| Mean episode return | 30,887 |
-| Median | 34,050 |
-| Max | 59,200 |
+| Pooled mean | 32,420 (95% CI 30,788 to 34,025) |
+| IQM | 34,033 (95% CI 31,759 to 35,942) |
+| Median | 34,700 |
+| Max | 59,500 |
 | Screen-1 clear rate | 1.00 |
-| Episodes reaching 30,000+ | 54 of 100 |
-| Episodes reaching 50,000+ | 3 of 100 |
+| Per-seed means | 30,887 / 32,531 / 33,843 |
 
-The progression across self-imitation rounds is **7,285 to 11,293 to 22,820 to 30,887**. The
+The progression across self-imitation rounds is **7,285 to 11,293 to 22,820 to ~32,400**. The
 training curve climbs steadily and holds, with no collapse:
 
 ![Round 3 learning curve](./figures/round3_learning_curve.png)
@@ -112,21 +114,21 @@ and gentle learning rates, strong anchors, pure-demo imitation, and trust region
 collapse without preventing it. About 30k is where stable closed-loop play tops out for this
 method.
 
-Honest limits: round 3 is a single seed, so the 30,887 wants a multi-seed interquartile mean to
-be publication-grade. And the headline goal this campaign was set (a 50k *mean*) was not reached;
-50k stands only as a single-episode max.
+Honest limit: the headline goal this campaign was set (a 50k *mean*) was not reached; 50k stands
+only as a single-episode max. The 30k result itself is solid: three seeds pool to mean 32,420
+(95% CI 30,788 to 34,025) with an IQM of 34,033, so it is a robust recipe, not a lucky run.
 
 ## Takeaway
 
 Iterated self-imitation closed most of the discovery-to-policy gap, lifting the robust mean from
-the old 7,285 ceiling to 30,887, a bit over 4x, with a best game of 59,200. But it has a ceiling
-of its own around 30k, set by training instability rather than capacity or the game. A 50k mean
-is out of reach for this method on this setup; it would need a fundamentally different paradigm.
+the old 7,285 ceiling to a 3-seed IQM of 34,033 (pooled mean 32,420), more than 4x, with a best
+game of 59,500. But it has a ceiling of its own around 30k, set by training instability rather
+than capacity or the game. A 50k mean is out of reach for this method on this setup; it would
+need a fundamentally different paradigm.
 
 ## What's next
 
-1. **Multi-seed round 3** for a rigorous interquartile-mean headline on the 30,887 result.
-2. **A different paradigm for a higher mean.** The instability is in the policy-gradient
+1. **A different paradigm for a higher mean.** The instability is in the policy-gradient
    continuation, so the candidates are model-based control (MuZero-style planning, which does not
    rely on this kind of continuation) or a dedicated training-stability effort. Both are large,
    multi-week undertakings rather than another overnight run.
