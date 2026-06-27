@@ -1,0 +1,8 @@
+metric,value,seeds,timesteps,run_id
+mean_return,30887,1,50000000,ppo_sil_deepbuf_r3_50m_s1_20260619_121006
+median_return,34050,1,50000000,ppo_sil_deepbuf_r3_50m_s1_20260619_121006
+max_return,59200,1,50000000,ppo_sil_deepbuf_r3_50m_s1_20260619_121006
+clear_rate,1.00,1,50000000,ppo_sil_deepbuf_r3_50m_s1_20260619_121006
+episodes_ge_50k,3,1,50000000,ppo_sil_deepbuf_r3_50m_s1_20260619_121006
+push_attempts_past_30k,6,0,0,rounds_4_through_9
+push_attempts_outcome,all_collapsed,0,0,rounds_4_through_9
