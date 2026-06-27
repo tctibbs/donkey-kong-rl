@@ -1,0 +1,40 @@
+# Single uninterrupted arc test. Every collapse (rounds 4-9) was a RESTART from a ~30k
+# checkpoint, and the cold-optimizer + LR re-anneal of the restart is the suspected trigger.
+# Round 3 (this exact recipe, 50M) was a single arc that reached 30,887 and was STILL RISING
+# (seeds 1/2/3 ended at training returns 33.8k/37.7k/35k). This runs the SAME arc to 75M
+# instead of stopping at 50M, with no mid-run restart, to test the one untried condition: does
+# continuous training climb past 30k in-arc (so the ceiling was a restart artifact), or does it
+# plateau/collapse at ~30k anyway (so the ceiling is intrinsic)? Same recipe as round 3, only
+# the horizon changes.
+name: ppo_sil_deepbuf_singlearc_75m
+seed: 1
+total_timesteps: 75000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_25m_s1_20260614_104019/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w74.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d4_w79.pkl
+    - data/explore_d4_w77.pkl
+    - data/explore_d4_w80.pkl
+    - data/explore_d4_w73.pkl
+    - data/explore_d4_w75.pkl
+    - data/explore_d4_w78.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  buffer_size: 120000
+  demo_buffer_size: 60000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 400
+track: true
