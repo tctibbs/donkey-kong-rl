@@ -397,6 +397,8 @@ def train_sil(cfg: ExperimentConfig) -> dict:
                 )
                 logratio = newlogprob - b_logprobs[mb]
                 ratio = logratio.exp()
+                with torch.no_grad():
+                    approx_kl = ((ratio - 1) - logratio).mean()
                 mb_adv = b_advantages[mb]
                 if cfg.ppo.norm_adv:
                     mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
@@ -410,6 +412,8 @@ def train_sil(cfg: ExperimentConfig) -> dict:
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(agent.parameters(), cfg.ppo.max_grad_norm)
                 optimizer.step()
+            if cfg.ppo.target_kl is not None and approx_kl > cfg.ppo.target_kl:
+                break
 
         # Self-imitation updates: pull toward high-return buffered transitions.
         if buffer.size > sil.batch_size or buffer.d_size > sil.batch_size:
