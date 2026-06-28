@@ -17,8 +17,11 @@ each lap as the game ramps difficulty.
 ## Results
 
 Plain PPO farms 100-point barrel jumps and never climbs (mean 4,027, zero screen clears).
-Ten experiments later, self-imitation from a permanent demonstration buffer reaches a mean
-of 22,820 with a best episode of 43,700, the 30k range, by a trained closed-loop policy.
+A chain of self-imitation rounds takes a trained closed-loop policy to a **3-seed mean of
+32,420 (IQM 34,033), with a best episode of 59,500** under the stochastic protocol, about
+4.6x the strongest no-demonstration agent. That is where this method tops out: the same
+recipe collapses if pushed past ~30k, a training-stability ceiling documented in
+[experiment 11](experiments/11-past-30k-and-the-sil-ceiling/writeup.md).
 
 The whole arc, each experiment a self-contained write-up with its config, numbers, and
 figures, is in **[experiments/](experiments/README.md)**.
