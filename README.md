@@ -9,13 +9,14 @@ compare against. I wanted to see how far I could push it, keep everything reprod
 and leave an honest trail of what worked and what did not.
 
 <p align="center">
-  <img src="assets/donkey_kong_before_after.gif" alt="Left: an untrained agent farms the bottom of the first screen. Right: the trained agent climbs, clears, and loops the game.">
+  <img src="assets/donkey_kong_before_after.gif" alt="Left: a plain PPO agent farms the bottom of the first screen. Right: the same network trained with self-imitation climbs, clears, and loops the game.">
 </p>
 
-Left, an untrained PPO agent stuck farming barrel jumps at the bottom (4,027 points, never
-climbs). Right, the trained self-imitation agent climbing, clearing, and looping both stages
-for a 44,600-point run (its best games reach 59,500). Both under the stochastic evaluation
-protocol, shown at 4x speed; the girders recolor each lap as the game ramps up.
+Left, a plain PPO agent (10M steps, no demonstrations) that converged to farming barrel jumps
+at the bottom (4,027 points, never climbs). Right, the same network trained with self-imitation
+from a demonstration buffer, now climbing, clearing, and looping both stages for a 44,600-point
+run (its best games reach 59,500). Both under the stochastic evaluation protocol, shown at 4x
+speed; the girders recolor each lap as the game ramps up.
 
 ## Results
 
