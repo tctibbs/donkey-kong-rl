@@ -1,0 +1,14 @@
+metric,value,seeds,timesteps,run_id
+clip_mean_of_means,5174,3,10000000,ppo_abl_clip
+scale_mean_of_means,4915,3,10000000,ppo_abl_R
+clip_best_checkpoint_mean,6035,1,10000000,ppo_abl_clip_s1
+clip_best_checkpoint_clear_rate,0.98,1,10000000,ppo_abl_clip_s1
+floor0.0_mean,3422,1,10000000,ppo_abl_floor0
+floor0.0_clear_rate,0.00,1,10000000,ppo_abl_floor0
+floor0.05_clear_rate,0.81,1,10000000,ppo_abl_floor005
+floor0.15_clear_rate,0.93,1,10000000,ppo_abl_R_s1
+floor0.3_clear_rate,0.78,1,10000000,ppo_abl_floor03
+anneal100_mean,4686,1,10000000,ppo_abl_anneal100
+anneal100_clear_rate,0.82,1,10000000,ppo_abl_anneal100
+no_bc_init_mean,4735,1,10000000,ppo_abl_noinit
+no_bc_init_clear_rate,0.83,1,10000000,ppo_abl_noinit

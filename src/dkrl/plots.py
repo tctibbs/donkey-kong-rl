@@ -1,6 +1,8 @@
-"""Learning-curve plotting from per-run metrics CSVs."""
+"""Plotting helpers: learning curves and evaluation score distributions."""
 
 import csv
+import json
+import statistics
 from pathlib import Path
 
 import matplotlib as mpl
@@ -50,6 +52,65 @@ def plot_learning_curves(
     ax.set_ylabel("episodic return (mean of last 100)")
     ax.set_title(title)
     ax.legend(fontsize=7)
+    ax.grid(alpha=0.3)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return out_path
+
+
+def read_eval_returns(ledger_path: Path, run_id: str) -> list[float]:
+    """Read the per-episode returns of a run's latest evaluation row.
+
+    Args:
+        ledger_path: Path to the append-only ledger (results/ledger.jsonl).
+        run_id: Run id whose evaluation row to read.
+
+    Returns:
+        Per-episode raw returns from the last eval row matching the run id,
+        or an empty list if no such row exists.
+    """
+    returns: list[float] = []
+    with ledger_path.open() as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("kind") == "eval" and row.get("run_id") == run_id:
+                returns = [float(x) for x in row["returns"]]
+    return returns
+
+
+def plot_score_distribution(
+    returns: list[float],
+    out_path: Path,
+    title: str = "DonkeyKong-v5 evaluation score distribution",
+    goal: float | None = None,
+) -> Path:
+    """Plot a histogram of per-episode evaluation returns with mean and median.
+
+    Args:
+        returns: Per-episode raw returns from one evaluation.
+        out_path: Output PNG path.
+        title: Figure title.
+        goal: Optional reference score drawn as a vertical line (e.g. a target).
+
+    Returns:
+        The output path.
+    """
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    ax.hist(returns, bins=20, color="#4c72b0", edgecolor="white")
+    mean = statistics.fmean(returns)
+    median = statistics.median(returns)
+    ax.axvline(mean, color="#c44e52", linewidth=1.5, label=f"mean {mean:,.0f}")
+    ax.axvline(
+        median, color="#55a868", linewidth=1.5, linestyle="--", label=f"median {median:,.0f}"
+    )
+    if goal is not None:
+        ax.axvline(goal, color="#8172b3", linewidth=1.5, linestyle=":", label=f"goal {goal:,.0f}")
+    ax.set_xlabel("episode return")
+    ax.set_ylabel("episodes")
+    ax.set_title(title)
+    ax.legend(fontsize=8)
     ax.grid(alpha=0.3)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()

@@ -1,0 +1,9 @@
+metric,value,seeds,timesteps,run_id
+discovered_trajectory_score_open_loop,30100,1,,goexplore_wave4c
+replay_verified_score,30100,1,,goexplore_wave4c
+distilled_policy_mean_return,7123,1,25000000,ppo_goexplore3_25m_s1_20260612_182543
+distilled_policy_median_return,7250,1,25000000,ppo_goexplore3_25m_s1_20260612_182543
+distilled_policy_max_return,8000,1,25000000,ppo_goexplore3_25m_s1_20260612_182543
+distilled_policy_min_return,5300,1,25000000,ppo_goexplore3_25m_s1_20260612_182543
+distilled_policy_std_return,743,1,25000000,ppo_goexplore3_25m_s1_20260612_182543
+distilled_policy_clear_rate,1.00,1,25000000,ppo_goexplore3_25m_s1_20260612_182543

@@ -1,0 +1,24 @@
+# Recurrent fine-tuning of the best feedforward agent with online distillation.
+# Distill GE3 (mean 7.1k, 100% clear) into an LSTM with correct recurrent
+# dynamics, then PPO fine-tune while an annealed teacher-matching loss (the
+# recurrent kickstarting floor) holds the behavior. The LSTM starts at GE3's
+# competence and can improve reactive rivets play via flame-velocity memory.
+name: ppo_lstm_distill_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_lstm
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+lstm:
+  hidden_size: 256
+  distill_teacher: checkpoints/ppo_goexplore3_25m_s1_20260612_182543/final.pt
+  distill_chunks: 500
+bc:
+  aux_coef: 1.0
+  aux_anneal_updates: 800
+  aux_coef_floor: 0.4
+checkpoint_interval_updates: 400
+track: true

@@ -1,8 +1,8 @@
-# Methods and Results (draft)
+# Methods and Results
 
-Status: draft for the white paper. Every number in this document is backed
-by a row in `results/ledger.jsonl` (run ids cited inline) and reproduces
-from the tagged commits.
+A running write-up of what I tried and what the numbers showed. Every figure
+here is backed by a row in `results/ledger.jsonl` (run ids cited inline) and
+reproduces from the tagged commits.
 
 ## 1. Methods
 
@@ -174,12 +174,18 @@ context at each phase boundary, including an independent re-evaluation of
 the headline checkpoint at an unseen seed (mean 5,076, clear rate 0.90,
 within sampling noise of the reported 5,269 / 0.93).
 
-## 3. Notes for the full paper
+## 3. TODO
 
-- Human-normalized scores need an explicit reference; no canonical
-  DonkeyKong human baseline exists. Community anchors: about 30,000 for a
-  decent casual player. Our best agents reach about 20 percent of that.
-- Limitations: demonstrations come from a hand-written RAM policy, so the
-  method assumes a scriptable expert exists; single game; 1080 Ti budget.
-- The RND throughput note (4.5x slowdown from float64 observation
-  normalization) belongs in an appendix if RND is revisited.
+- [ ] Fold in the self-imitation results. This write-up still stops at the
+  6,884 final agent. Self-Imitation Learning from a permanent (non-evicting)
+  demonstration buffer broke the 7,285 closed-loop ceiling, and iterated SIL
+  reached a 3-seed mean of 32,420 (IQM 34,033, max 59,500, 100 percent screen-1
+  clear) before hitting a training-stability ceiling at ~30k. The "best agents
+  reach about 20 percent of a casual human" framing below is now out of date.
+  The full account is in experiments/11-past-30k-and-the-sil-ceiling/.
+- [ ] Pick a human-normalized reference. No canonical DonkeyKong human baseline
+  exists; community anchor is about 30,000 for a decent casual player.
+- [ ] Write up the limitations: scripted-demonstration kickstart assumes a
+  scriptable expert exists, single game, 1080 Ti budget.
+- [ ] Move the RND throughput note (4.5x slowdown from float64 observation
+  normalization) to an appendix if RND is revisited.

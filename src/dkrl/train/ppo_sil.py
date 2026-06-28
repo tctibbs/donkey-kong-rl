@@ -147,6 +147,37 @@ def _seed_from_trajectories(
     return seeded
 
 
+def _seed_from_self_demos(
+    buffer: SILBuffer, paths: list[str], gamma: float, reward_scale: float, transform: str
+) -> int:
+    """Seed the demo buffer from the agent's own harvested episodes.
+
+    Each path is a pickle written by ``harvest_self_trajectories`` holding stored
+    observations, actions, and per-step rewards (no replay needed). Returns are
+    computed as discounted return-to-go, matching the trajectory seeding.
+    """
+    seeded = 0
+    for path in paths:
+        with Path(path).open("rb") as f:
+            payload = pickle.load(f)
+        for ep in payload["episodes"]:
+            ep_obs = list(np.asarray(ep["obs"], dtype=np.uint8))
+            ep_act = [int(a) for a in ep["actions"]]
+            rew = [
+                (float(r) * reward_scale if transform == "scale" else float(r))
+                for r in ep["rewards"]
+            ]
+            returns = _discounted_returns(rew, gamma)
+            buffer.add_demos(ep_obs, ep_act, returns)
+            seeded += len(ep_act)
+        scores = [e["return"] for e in payload["episodes"]]
+        logger.info(
+            f"seeded SIL buffer from {path}: {len(payload['episodes'])} episodes, "
+            f"returns {min(scores):.0f}..{max(scores):.0f}, {seeded} transitions total"
+        )
+    return seeded
+
+
 def _discounted_returns(rewards: list[float], gamma: float) -> list[float]:
     """Monte-Carlo discounted return-to-go for an episode."""
     out = [0.0] * len(rewards)
@@ -215,6 +246,14 @@ def train_sil(cfg: ExperimentConfig) -> dict:
         _seed_from_trajectories(
             buffer,
             sil.seed_trajectories,
+            cfg.ppo.gamma,
+            cfg.env.reward_scale,
+            cfg.env.reward_transform,
+        )
+    if sil.seed_self_demos:
+        _seed_from_self_demos(
+            buffer,
+            sil.seed_self_demos,
             cfg.ppo.gamma,
             cfg.env.reward_scale,
             cfg.env.reward_transform,
@@ -358,6 +397,8 @@ def train_sil(cfg: ExperimentConfig) -> dict:
                 )
                 logratio = newlogprob - b_logprobs[mb]
                 ratio = logratio.exp()
+                with torch.no_grad():
+                    approx_kl = ((ratio - 1) - logratio).mean()
                 mb_adv = b_advantages[mb]
                 if cfg.ppo.norm_adv:
                     mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
@@ -371,6 +412,8 @@ def train_sil(cfg: ExperimentConfig) -> dict:
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(agent.parameters(), cfg.ppo.max_grad_norm)
                 optimizer.step()
+            if cfg.ppo.target_kl is not None and approx_kl > cfg.ppo.target_kl:
+                break
 
         # Self-imitation updates: pull toward high-return buffered transitions.
         if buffer.size > sil.batch_size or buffer.d_size > sil.batch_size:

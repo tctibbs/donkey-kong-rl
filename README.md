@@ -1,63 +1,44 @@
-# donkey-kong-rl
+# Donkey Kong RL
 
-How far can a modern, single-GPU reinforcement learning setup push Atari Donkey Kong,
-and which design choices actually move the needle?
+A personal experiment in how far I can get a reinforcement learning agent to play
+Atari Donkey Kong on one modest machine, and figuring out what actually makes a difference.
 
-`ALE/DonkeyKong-v5` is a sparse-reward, long-horizon game outside the canonical
-Atari-57 benchmark set, so there is almost no published baseline. This repository is a
-rigorous, reproducible study of that single game: a configuration-driven training
-pipeline, a controlled ablation suite, and the artifacts a white paper needs (results
-ledger, learning curves, evaluation videos, experiment journal).
+Donkey Kong (`ALE/DonkeyKong-v5`) is a hard game for RL. Rewards are sparse, episodes
+run long, and it sits outside the usual Atari benchmark set, so there is not much to
+compare against. I wanted to see how far I could push it, keep everything reproducible,
+and leave an honest trail of what worked and what did not.
 
-![Trained Donkey Kong agent scoring 44,800 in a single closed-loop episode](assets/donkey_kong_44800_run.gif)
+<p align="center">
+  <img src="assets/donkey_kong_before_after.gif" alt="Left: an untrained agent farms the bottom of the first screen. Right: the trained agent climbs, clears, and loops the game.">
+</p>
 
-The trained policy under the stochastic evaluation protocol, looping both stages
-(barrels and rivets) for a 44,800-point run. Shown at 6x speed; the girders recolor
-each lap as the game ramps difficulty.
+Left, an untrained PPO agent stuck farming barrel jumps at the bottom (4,027 points, never
+climbs). Right, the trained self-imitation agent climbing, clearing, and looping both stages
+for a 44,600-point run (its best games reach 59,500). Both under the stochastic evaluation
+protocol, shown at 4x speed; the girders recolor each lap as the game ramps up.
 
-## Status
+## Results
 
-- Phase 0 (pipeline) and Phase 1 (PPO baseline) complete (tags `v0.1.0-pipeline`,
-  `v0.2.0-ppo-baseline`).
-- Random baseline: mean 122 (100 protocol episodes). Plain PPO at 10M steps: mean
-  4,027 but a 0.00 screen-1 clear rate (it farms barrel jumps; see the journal).
-- Phase 2 complete: a systematic ladder of interventions (reward transforms, RND,
-  entropy, action sets, behavior cloning variants) shows generic exploration never
-  produces a single screen clear. The winning recipe is scripted-demonstration
-  kickstarting: BC warm-start plus an annealed-to-a-floor BC auxiliary loss with
-  two-screen demos. Best agent: mean 5,269, median 5,500, 93 percent screen-1
-  clear rate over 100 protocol episodes.
-- Phase 3 (ablations): the BC pressure floor is the load-bearing component
-  (removing it collapses clearing to zero; inverted-U dose response peaking at
-  0.15); the reward transform is irrelevant once behavior is demonstrated
-  (clip vs scale within seed noise across 3 seeds each).
-- Phase 4 (final agent): the production recipe at 25M steps, 3 seeds, pooled
-  over 300 protocol episodes: mean 6,884 (95 percent CI 6,724 to 7,027), IQM
-  7,071, median 7,100, screen-1 clear rate 0.97. Draft methods and results:
-  `docs/paper/methods-and-results.md`.
-- Headline: a trained closed-loop policy reaches the 30k range under the
-  stochastic Machado protocol. Self-Imitation Learning seeded from a permanent
-  (non-evicting) demonstration buffer, applied as expert iteration, lifts the
-  100-episode protocol-eval mean from the prior 7,285 ceiling to 22,820 (median
-  24,400, max 43,700, 100 percent screen-1 clear, single seed). The progression
-  across self-imitation rounds is 7,285 (the ceiling that held across ten method
-  classes) to 11,293 (SIL with a permanent demo buffer) to 22,820 (iterated SIL
-  with an enriched 13-trajectory deep-demo buffer). One in five evaluation
-  episodes reaches 30,000 or more, and the best episode (43,700) exceeds the
-  open-loop Go-Explore discovery trajectory that seeded it (30,100): the reactive
-  policy now loops the two-screen game deeper than the search ever found. See
-  `journal/2026-06-14-30k-reached-iterated-sil.md`.
-- Earlier closed-loop ceiling (now superseded): across eight method classes the
-  best robust policy was mean 7,285 (recurrent LSTM distilled from the Go-Explore
-  agent), with the open-loop Go-Explore discovery trajectory at 30,100
-  (`dkrl replay-video`). Self-imitation closed most of that discovery-to-policy
-  gap, which had been the campaign's central open question.
+Plain PPO farms 100-point barrel jumps and never climbs (mean 4,027, zero screen clears).
+A chain of self-imitation rounds takes a trained closed-loop policy to a **3-seed mean of
+32,420 (IQM 34,033), with a best episode of 59,500** under the stochastic protocol, about
+4.6x the strongest no-demonstration agent. That is where this method tops out: the same
+recipe collapses if pushed past ~30k, a training-stability ceiling documented in
+[experiment 11](experiments/11-past-30k-and-the-sil-ceiling/writeup.md).
 
-## Hardware target
+The whole arc, each experiment a self-contained write-up with its config, numbers, and
+figures, is in **[experiments/](experiments/README.md)**.
 
-Single machine: NVIDIA GTX 1080 Ti (Pascal), 12 CPU cores. The Atari simulation is
-CPU-bound; [EnvPool](https://github.com/sail-sg/envpool) provides the vectorized
-environment throughput. The learner runs on the GPU.
+## Hardware
+
+One modest machine: an aging NVIDIA GTX 1080 Ti (Pascal) and 12 CPU cores. The binding
+constraint is not the GPU. Atari stepping is CPU-bound, so the 12 cores set the pace:
+throughput tops out around 5,000 environment steps per second, with
+[EnvPool](https://github.com/sail-sg/envpool) doing the vectorized stepping. The
+Nature-CNN policy is small enough that the old GPU is never the bottleneck; it just runs
+the learner updates. The practical consequences run through the whole project: training
+is gated by CPU env-throughput, runs go one at a time, and the levers that mattered were
+algorithmic, not more compute.
 
 ## Setup
 

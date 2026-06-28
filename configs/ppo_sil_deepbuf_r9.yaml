@@ -1,0 +1,39 @@
+# Iterated SIL round 9: KL trust region. Rounds 4-8 all collapsed continuing past round-3's
+# 30,887. Round 8 (demo_fraction 1.0, no self-play in SIL) isolated the cause: PPO's own
+# on-policy update drifts the policy DOWN past 30k even with pure good-demo imitation. The
+# targeted fix is a trust region: target_kl 0.01 early-stops any PPO update whose policy
+# shift exceeds the KL budget, so the policy cannot drift far from the strong checkpoint in a
+# single update. Combined with gentle LR 5e-5 and band demos (~45.5k, reachable). If this
+# holds past update 1800 AND climbs above 30,887, the instability was uncontrolled PPO drift
+# and we have a path up. If it collapses too, ~30k is the firm iterated-SIL ceiling.
+name: ppo_sil_deepbuf_r9_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+ppo:
+  learning_rate: 0.00005
+  anneal_lr: false
+  target_kl: 0.01
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_r3_50m_s1_20260619_121006/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  seed_self_demos:
+    - data/self_demos_r3_band.pkl
+  buffer_size: 120000
+  demo_buffer_size: 120000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 200
+track: true

@@ -39,6 +39,16 @@ def main() -> None:
     p_plot.add_argument("metrics", type=Path, nargs="+")
     p_plot.add_argument("--out", type=Path, default=Path("results/plots/learning_curves.png"))
 
+    p_dist = sub.add_parser("plot-dist", help="Plot the eval score distribution for a run")
+    p_dist.add_argument(
+        "--run", type=str, required=True, help="Run id with an eval row in the ledger"
+    )
+    p_dist.add_argument("--out", type=Path, default=Path("results/plots/score_distribution.png"))
+    p_dist.add_argument("--ledger", type=Path, default=Path("results/ledger.jsonl"))
+    p_dist.add_argument(
+        "--goal", type=float, default=None, help="Optional reference line, e.g. 30000"
+    )
+
     p_stats = sub.add_parser("stats", help="Aggregate eval rows (IQM, bootstrap CIs)")
     p_stats.add_argument("--name", type=str, required=True, help="Run-id prefix to aggregate")
 
@@ -57,6 +67,17 @@ def main() -> None:
     p_sdemos.add_argument("--keep", type=int, default=25)
     p_sdemos.add_argument("--seed", type=int, default=11000)
     p_sdemos.add_argument("--merge-with", type=Path, default=None)
+
+    p_harvest = sub.add_parser(
+        "harvest-demos", help="Harvest a trained agent's best episodes as SIL demos (with rewards)"
+    )
+    p_harvest.add_argument("--checkpoint", type=Path, required=True)
+    p_harvest.add_argument("--out", type=Path, required=True)
+    p_harvest.add_argument("--episodes", type=int, default=300)
+    p_harvest.add_argument("--keep", type=int, default=25)
+    p_harvest.add_argument("--seed", type=int, default=12000)
+    p_harvest.add_argument("--min-return", type=float, default=0.0)
+    p_harvest.add_argument("--max-return", type=float, default=None)
 
     p_exp = sub.add_parser("explore", help="Go-Explore trajectory search (demo generation)")
     p_exp.add_argument("--out", type=Path, required=True)
@@ -183,6 +204,18 @@ def main() -> None:
         out = plot_learning_curves(args.metrics, args.out)
         logger.info(f"plot written to {out}")
 
+    elif args.command == "plot-dist":
+        from dkrl.log import setup_logging
+        from dkrl.plots import plot_score_distribution, read_eval_returns
+
+        setup_logging("plot-dist")
+        returns = read_eval_returns(args.ledger, args.run)
+        if not returns:
+            logger.error(f"no eval returns found for run {args.run} in {args.ledger}")
+            raise SystemExit(1)
+        out = plot_score_distribution(returns, args.out, goal=args.goal)
+        logger.info(f"distribution plot written to {out} ({len(returns)} episodes)")
+
     elif args.command == "stats":
         import json
 
@@ -210,6 +243,32 @@ def main() -> None:
         result.update(
             {
                 "kind": "self_demos",
+                "checkpoint": str(args.checkpoint),
+                "seed": args.seed,
+                "git_sha": git_sha(),
+                "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
+        append_row(result)
+
+    elif args.command == "harvest-demos":
+        from dkrl.demos import harvest_self_trajectories
+        from dkrl.ledger import git_sha
+        from dkrl.log import setup_logging
+
+        setup_logging("harvest-demos")
+        result = harvest_self_trajectories(
+            args.checkpoint,
+            args.out,
+            episodes=args.episodes,
+            keep=args.keep,
+            seed=args.seed,
+            min_return=args.min_return,
+            max_return=args.max_return,
+        )
+        result.update(
+            {
+                "kind": "harvest_demos",
                 "checkpoint": str(args.checkpoint),
                 "seed": args.seed,
                 "git_sha": git_sha(),

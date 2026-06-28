@@ -1,0 +1,39 @@
+# Iterated SIL round 8: the death-spiral removal test. Rounds 4-7 all collapsed continuing
+# past round-3's 30,887; the mechanism is a self-imitation death-spiral (SIL imitates the
+# policy's own DEGRADING self-play, the value baseline drifts down, shallow play looks
+# positive-advantage, the decay reinforces). Strong anchor (r7, frac 0.6) did not stop it.
+# This removes the source: demo_fraction 1.0 means the SIL update samples ONLY the fixed
+# good demos, never the self-play buffer, so there is no self-imitation feedback loop to
+# spiral. PPO's on-policy gradient still trains on live self-play, keeping the policy
+# grounded. Gentle LR 5e-5. Band demos at ~45.5k (reachable). If this also collapses,
+# mean-50k is unreachable via SIL on this setup; the result is round 3 (30,887, 59,200 max).
+name: ppo_sil_deepbuf_r8_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+ppo:
+  learning_rate: 0.00005
+  anneal_lr: false
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_r3_50m_s1_20260619_121006/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  seed_self_demos:
+    - data/self_demos_r3_band.pkl
+  buffer_size: 120000
+  demo_buffer_size: 120000
+  demo_fraction: 1.0
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 200
+track: true

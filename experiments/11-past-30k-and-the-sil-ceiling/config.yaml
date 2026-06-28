@@ -1,0 +1,38 @@
+# Iterated SIL round 3, toward a higher mean. The round-2 run (ppo_sil_deepbuf_25m,
+# mean 22,820) had NOT converged at 25M steps: its training return was still rising and
+# ended at its best (25,416). This continues from that checkpoint for another 50M steps
+# with the same permanent 13-trajectory deep-demo buffer, on the hypothesis that SIL keeps
+# bootstrapping deeper play from the agent's own positive-advantage episodes (it already
+# reaches 44k closed-loop, well past its 30k seed demos). Longer horizon, same recipe.
+name: ppo_sil_deepbuf_r3_50m
+seed: 1
+total_timesteps: 50000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_25m_s1_20260614_104019/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w74.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d4_w79.pkl
+    - data/explore_d4_w77.pkl
+    - data/explore_d4_w80.pkl
+    - data/explore_d4_w73.pkl
+    - data/explore_d4_w75.pkl
+    - data/explore_d4_w78.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  buffer_size: 120000
+  demo_buffer_size: 60000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 400
+track: true

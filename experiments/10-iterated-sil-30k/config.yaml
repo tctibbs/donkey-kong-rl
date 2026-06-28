@@ -1,0 +1,39 @@
+# Iterated SIL (expert-iteration round 2). Continue-train from the 11,293
+# ceiling-break checkpoint with a much richer permanent demo buffer: the 30,100
+# trajectory plus the entire d4 deep-frontier wave and the d3 trajectories. The
+# round-1 fix (non-evicting demo region) lifted the mean from 7,285 to 11,293 with
+# just three deep demos; this enriches the region to ~13 deep trajectories so the
+# policy has diverse deep targets to climb toward, aiming to shift the 48% of
+# episodes that die at the screen-1-to-2 transition up into the deep cluster.
+name: ppo_sil_deepbuf_25m
+seed: 1
+total_timesteps: 25000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+sil:
+  init_from: checkpoints/ppo_sil_demobuf_15m_s1_20260613_210247/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w74.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d4_w79.pkl
+    - data/explore_d4_w77.pkl
+    - data/explore_d4_w80.pkl
+    - data/explore_d4_w73.pkl
+    - data/explore_d4_w75.pkl
+    - data/explore_d4_w78.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  buffer_size: 120000
+  demo_buffer_size: 60000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 400
+track: true

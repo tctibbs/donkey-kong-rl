@@ -1,0 +1,39 @@
+# Iterated SIL round 5: continue the PROVEN recipe. Round 4 (seeding the agent's own
+# 50-69k episodes at demo_fraction 0.5) collapsed: demos 2x above the policy mean
+# destabilized it (recovered to 26k by update 500, then fell to ~10k). Round 3's recipe
+# worked precisely because its 30k Go-Explore demos sat AT the policy's reachable level and
+# anchored consistency while self-play extended the top. Round 3's curve was still rising at
+# 50M (training return 25k -> best 33.8k), so this simply continues it: same 13 Go-Explore
+# demos, continue from the round-3 best (mean 30,887), another 50M. Low risk, reliable climb.
+name: ppo_sil_deepbuf_r5_50m
+seed: 1
+total_timesteps: 50000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+sil:
+  init_from: checkpoints/ppo_sil_deepbuf_r3_50m_s1_20260619_121006/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d4_w74.pkl
+    - data/explore_d4_w76.pkl
+    - data/explore_d4_w72.pkl
+    - data/explore_d4_w79.pkl
+    - data/explore_d4_w77.pkl
+    - data/explore_d4_w80.pkl
+    - data/explore_d4_w73.pkl
+    - data/explore_d4_w75.pkl
+    - data/explore_d4_w78.pkl
+    - data/explore_d4_w71.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  buffer_size: 120000
+  demo_buffer_size: 60000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 400
+track: true

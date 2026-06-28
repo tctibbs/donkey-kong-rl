@@ -1,0 +1,27 @@
+# SIL with a SEPARATE, non-evicting demonstration buffer (the fix). Round 1's
+# single circular buffer evicted the seeded 30k transitions, so SIL only
+# reinforced the policy's own 7k play (eval 7,265). Here the deep trajectories
+# live in a permanent demo region and 50% of every self-imitation batch is
+# drawn from them, so the policy keeps imitating 30k-level play throughout.
+name: ppo_sil_demobuf_15m
+seed: 1
+total_timesteps: 15000000
+algo: ppo_sil
+env:
+  num_envs: 64
+  num_threads: 12
+  reward_transform: scale
+  reward_scale: 0.01
+sil:
+  init_from: checkpoints/ppo_goexplore3_25m_s1_20260612_182543/final.pt
+  seed_trajectories:
+    - data/trajectory_30k.pkl
+    - data/explore_d3_w33.pkl
+    - data/explore_d3_w32.pkl
+  buffer_size: 120000
+  demo_buffer_size: 15000
+  demo_fraction: 0.5
+  updates_per_iter: 4
+  vf_coef: 0.01
+checkpoint_interval_updates: 400
+track: true

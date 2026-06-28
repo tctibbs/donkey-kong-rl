@@ -1,0 +1,9 @@
+metric,value,seeds,episodes,note
+pooled_mean,32420,3,300,"95% CI 30788-34025"
+iqm,34033,3,300,"95% CI 31759-35942 (rliable, 10k bootstrap)"
+median,34700,3,300,
+clear_rate,1.00,3,300,
+seed1_mean,30887,1,100,max 59200
+seed2_mean,32531,1,100,max 59500
+seed3_mean,33843,1,100,max 56200
+push_attempts_past_30k,6,0,0,"rounds 4-9, all collapsed"
