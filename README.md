@@ -32,8 +32,7 @@ figures, is in **[experiments/](experiments/README.md)**.
 
 ## Hardware
 
-One modest machine: an aging NVIDIA GTX 1080 Ti (Pascal) and 12 CPU cores. The binding
-constraint is not the GPU. Atari stepping is CPU-bound, so the 12 cores set the pace:
+An aging NVIDIA GTX 1080 Ti (Pascal) and 12 CPU cores. The binding constraint is not the GPU. Atari stepping is CPU-bound, so the 12 cores set the pace:
 throughput tops out around 5,000 environment steps per second, with
 [EnvPool](https://github.com/sail-sg/envpool) doing the vectorized stepping. The
 Nature-CNN policy is small enough that the old GPU is never the bottleneck; it just runs
@@ -76,15 +75,15 @@ Measure the random-policy baseline:
 uv run dkrl random-baseline --episodes 100
 ```
 
-Every run writes a row to `results/ledger.jsonl` keyed by config hash, with git SHA,
-seed, scores, frame count, and wall-clock, so results survive independently of any
-tracking service.
+Every run writes a row to [`results/ledger.jsonl`](results/ledger.jsonl) keyed by config
+hash, with git SHA, seed, scores, frame count, and wall-clock, so results survive
+independently of any tracking service.
 
 ## Reproducing results
 
-Each ledger row records the exact config hash and git SHA. Check out that SHA, run the
-config under `configs/` with the recorded seed, and scores should match within seed
-noise. Headline results use 3 to 5 seeds and report mean, standard deviation, and
+Each [ledger](results/ledger.jsonl) row records the exact config hash and git SHA. Check out
+that SHA, run the config under [`configs/`](configs) with the recorded seed, and scores should
+match within seed noise. Headline results use 3 to 5 seeds and report mean, standard deviation, and
 interquartile mean.
 
 ## Quality gates
@@ -100,12 +99,13 @@ CI runs the same gates on every push and pull request.
 
 ## Repository layout
 
-- `src/dkrl/` package: config schemas, env construction, agents, training loops,
+- [`src/dkrl/`](src/dkrl) package: config schemas, env construction, agents, training loops,
   evaluation, ledger, plotting
-- `configs/` YAML experiment configs
-- `results/` results ledger (committed; small text)
-- `journal/` experiment journal, one lesson per file
-- `docs/adr/` architecture decision records
+- [`configs/`](configs) YAML experiment configs
+- [`experiments/`](experiments) the experiment series, one self-contained write-up per folder
+- [`results/`](results) results ledger (committed; small text)
+- [`journal/`](journal) raw lab notes, one lesson per file
+- [`docs/`](docs) intro, methodology, glossary, and [`adr/`](docs/adr) decision records
 
 ## License
 
