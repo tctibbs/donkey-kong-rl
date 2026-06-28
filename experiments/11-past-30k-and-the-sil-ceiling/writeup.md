@@ -114,6 +114,17 @@ and gentle learning rates, strong anchors, pure-demo imitation, and trust region
 collapse without preventing it. About 30k is where stable closed-loop play tops out for this
 method.
 
+There is a deeper reason, and it is the crux of the ceiling. Round 3 is stable because its
+learning rate anneals to near zero by the end of the run, which freezes the policy at ~30k.
+But that is also what stops it from going further: more progress needs a non-trivial learning
+rate, and every way of supplying one (a fresh annealed restart, a constant gentle rate, a
+longer anneal) reintroduces the drift and the collapse. A control run that simply annealed the
+same recipe over a longer horizon never even settled at 30k, it wobbled in the mid-20,000s,
+because its learning rate stayed higher for longer. So the stability and the ceiling are the
+same phenomenon: this recipe holds 30k only by switching learning off, and it cannot learn past
+30k without destabilizing. Breaking that trade-off needs a more intrinsically stable learner
+(or a non-policy-gradient method), not another knob on this one.
+
 Honest limit: the headline goal this campaign was set (a 50k *mean*) was not reached; 50k stands
 only as a single-episode max. The 30k result itself is solid: three seeds pool to mean 32,420
 (95% CI 30,788 to 34,025) with an IQM of 34,033, so it is a robust recipe, not a lucky run.
