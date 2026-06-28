@@ -32,3 +32,13 @@ def test_hash_sensitive_to_hyperparameters() -> None:
 def test_hash_is_stable() -> None:
     """The hash is deterministic across instantiations."""
     assert ExperimentConfig(name="x").config_hash == ExperimentConfig(name="y").config_hash
+
+
+def test_hash_stable_across_yaml_round_trip(tmp_path: Path) -> None:
+    """The config hash (the ledger traceability key) survives a YAML round-trip."""
+    cfg = ExperimentConfig(name="x", seed=7)
+    cfg.ppo.learning_rate = 1e-4
+    cfg.env.num_envs = 32
+    path = tmp_path / "cfg.yaml"
+    cfg.to_yaml(path)
+    assert ExperimentConfig.from_yaml(path).config_hash == cfg.config_hash

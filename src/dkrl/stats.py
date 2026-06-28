@@ -54,7 +54,10 @@ def aggregate_runs(
     pooled = np.concatenate([np.asarray(r["returns"], dtype=np.float64) for r in rows])
     clears = np.concatenate(
         [
-            (np.asarray(r["max_step_rewards"], dtype=np.float64) >= 1500.0)
+            (
+                np.asarray(r["max_step_rewards"], dtype=np.float64)
+                >= float(r.get("clear_reward_threshold", 1500.0))
+            )
             if "max_step_rewards" in r
             else np.full(len(r["returns"]), np.nan)
             for r in rows

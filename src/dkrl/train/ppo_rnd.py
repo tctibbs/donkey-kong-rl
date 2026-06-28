@@ -22,6 +22,7 @@ from torch.utils.tensorboard import SummaryWriter
 from dkrl.agents.ppo_rnd import PPORNDAgent
 from dkrl.config import ExperimentConfig
 from dkrl.envs import EpisodeStats, make_train_envs
+from dkrl.gae import compute_gae
 from dkrl.ledger import git_sha
 from dkrl.log import setup_logging
 from dkrl.rnd import RewardForwardFilter, RNDModel, RunningMeanStd, normalize_frames
@@ -209,29 +210,19 @@ def train_rnd(cfg: ExperimentConfig) -> dict:
             next_value_ext = next_value_ext.reshape(1, -1)
             next_value_int = next_value_int.reshape(1, -1)
 
-            ext_advantages = torch.zeros_like(rewards)
+            ext_advantages, ext_returns = compute_gae(
+                rewards,
+                ext_values,
+                dones,
+                next_value_ext,
+                next_done,
+                cfg.ppo.gamma,
+                cfg.ppo.gae_lambda,
+            )
             int_advantages = torch.zeros_like(curiosity_rewards)
-            ext_lastgaelam = torch.zeros(num_envs, device=device)
             int_lastgaelam = torch.zeros(num_envs, device=device)
             for t in reversed(range(num_steps)):
-                if t == num_steps - 1:
-                    ext_nextnonterminal = 1.0 - next_done
-                    ext_nextvalues = next_value_ext
-                    int_nextvalues = next_value_int
-                else:
-                    ext_nextnonterminal = 1.0 - dones[t + 1]
-                    ext_nextvalues = ext_values[t + 1]
-                    int_nextvalues = int_values[t + 1]
-                ext_delta = (
-                    rewards[t]
-                    + cfg.ppo.gamma * ext_nextvalues * ext_nextnonterminal
-                    - ext_values[t]
-                )
-                ext_lastgaelam = (
-                    ext_delta
-                    + cfg.ppo.gamma * cfg.ppo.gae_lambda * ext_nextnonterminal * ext_lastgaelam
-                )
-                ext_advantages[t] = ext_lastgaelam
+                int_nextvalues = next_value_int if t == num_steps - 1 else int_values[t + 1]
                 int_delta = (
                     curiosity_rewards[t] + cfg.rnd.int_gamma * int_nextvalues - int_values[t]
                 )
@@ -239,7 +230,6 @@ def train_rnd(cfg: ExperimentConfig) -> dict:
                     int_delta + cfg.rnd.int_gamma * cfg.ppo.gae_lambda * int_lastgaelam
                 )
                 int_advantages[t] = int_lastgaelam
-            ext_returns = ext_advantages + ext_values
             int_returns = int_advantages + int_values
 
         b_obs = obs.reshape((-1, *obs_shape))

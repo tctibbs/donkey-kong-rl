@@ -109,12 +109,12 @@ class SILConfig(BaseModel):
 class LSTMConfig(BaseModel):
     """Recurrent-policy hyperparameters (used when algo is ppo_lstm)."""
 
-    hidden_size: int = 128
+    hidden_size: int = 256
     distill_teacher: str | None = Field(
         default=None, description="Feedforward checkpoint to distill into the LSTM before PPO"
     )
     distill_chunks: int = Field(
-        default=400, description="Teacher rollout chunks for distillation pretraining"
+        default=500, description="Teacher rollout chunks for distillation pretraining"
     )
 
 

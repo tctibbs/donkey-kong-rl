@@ -23,6 +23,7 @@ from torch.utils.tensorboard import SummaryWriter
 from dkrl.agents.lstm import LSTMAgent
 from dkrl.config import ExperimentConfig
 from dkrl.envs import EpisodeStats, make_train_envs
+from dkrl.gae import compute_gae
 from dkrl.ledger import git_sha
 from dkrl.log import setup_logging
 from dkrl.train.ppo import make_run_id
@@ -282,24 +283,11 @@ def train_lstm(cfg: ExperimentConfig) -> dict:
 
         with torch.no_grad():
             next_value = agent.get_value(next_obs, next_state, next_done).reshape(1, -1)
-            advantages = torch.zeros_like(rewards)
-            lastgaelam = torch.zeros(num_envs, device=device)
-            for t in reversed(range(num_steps)):
-                if t == num_steps - 1:
-                    nextnonterminal = 1.0 - next_done
-                    nextvalues = next_value
-                else:
-                    nextnonterminal = 1.0 - dones[t + 1]
-                    nextvalues = values[t + 1]
-                delta = rewards[t] + cfg.ppo.gamma * nextvalues * nextnonterminal - values[t]
-                lastgaelam = (
-                    delta + cfg.ppo.gamma * cfg.ppo.gae_lambda * nextnonterminal * lastgaelam
-                )
-                advantages[t] = lastgaelam
-            returns = advantages + values
+            advantages, returns = compute_gae(
+                rewards, values, dones, next_value, next_done, cfg.ppo.gamma, cfg.ppo.gae_lambda
+            )
 
         env_inds = np.arange(num_envs)
-        flat_dones = dones.reshape(-1)
         for _ in range(cfg.ppo.update_epochs):
             np.random.shuffle(env_inds)
             for start in range(0, num_envs, envs_per_batch):
@@ -361,7 +349,6 @@ def train_lstm(cfg: ExperimentConfig) -> dict:
                 optimizer.step()
             if cfg.ppo.target_kl is not None and approx_kl > cfg.ppo.target_kl:
                 break
-        del flat_dones
 
         elapsed = time.time() - start_time
         sps = int(global_step / elapsed)

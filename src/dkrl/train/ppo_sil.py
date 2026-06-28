@@ -27,6 +27,7 @@ from torch.utils.tensorboard import SummaryWriter
 from dkrl.agents.ppo import PPOAgent
 from dkrl.config import ExperimentConfig
 from dkrl.envs import EpisodeStats, make_train_envs
+from dkrl.gae import compute_gae
 from dkrl.ledger import git_sha
 from dkrl.log import setup_logging
 from dkrl.train.ppo import make_run_id
@@ -227,6 +228,11 @@ def train_sil(cfg: ExperimentConfig) -> dict:
     n_actions = int(envs.action_space.n)
     agent = PPOAgent(n_actions, cfg.env.frame_stack).to(device)
     sil = cfg.sil
+    if cfg.env.reward_transform != "scale":
+        raise ValueError(
+            "ppo_sil requires env.reward_transform='scale': demo seeding computes returns from "
+            "raw reward, which only matches the on-policy critic under the scale transform."
+        )
     if sil.init_from:
         init_ckpt = torch.load(sil.init_from, map_location="cpu", weights_only=False)
         agent.load_state_dict(init_ckpt["model_state_dict"])
@@ -366,21 +372,9 @@ def train_sil(cfg: ExperimentConfig) -> dict:
         # GAE.
         with torch.no_grad():
             next_value = agent.get_value(next_obs).reshape(1, -1)
-            advantages = torch.zeros_like(rewards)
-            lastgaelam = torch.zeros(num_envs, device=device)
-            for t in reversed(range(num_steps)):
-                if t == num_steps - 1:
-                    nextnonterminal = 1.0 - next_done
-                    nextvalues = next_value
-                else:
-                    nextnonterminal = 1.0 - dones[t + 1]
-                    nextvalues = values[t + 1]
-                delta = rewards[t] + cfg.ppo.gamma * nextvalues * nextnonterminal - values[t]
-                lastgaelam = (
-                    delta + cfg.ppo.gamma * cfg.ppo.gae_lambda * nextnonterminal * lastgaelam
-                )
-                advantages[t] = lastgaelam
-            returns = advantages + values
+            advantages, returns = compute_gae(
+                rewards, values, dones, next_value, next_done, cfg.ppo.gamma, cfg.ppo.gae_lambda
+            )
 
         b_obs = obs.reshape((-1, *obs_shape))
         b_logprobs = logprobs.reshape(-1)

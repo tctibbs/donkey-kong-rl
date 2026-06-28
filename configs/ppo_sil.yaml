@@ -5,6 +5,11 @@
 # high-return transitions inside the on-policy loop. This is the Go-Explore
 # robustification mechanism: convert high-return experience into a robust
 # closed-loop policy without BC covariate shift or restore distribution shift.
+#
+# Provenance: experiment 09 narrates a round-1 failure where a single circular buffer evicted
+# the seeded deep trajectories. Under the current code, seed_trajectories are written to the
+# permanent, non-evicting demo region (SILBuffer.add_demos), so this config reproduces the
+# round-2 fix, not that round-1 eviction. The round-1 behavior lives only in the write-up.
 name: ppo_sil_15m
 seed: 1
 total_timesteps: 15000000

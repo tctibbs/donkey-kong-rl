@@ -156,6 +156,7 @@ def dagger_collect(
     collected_states: list[Any] = []
     obs, _ = env.reset(seed=seed)
     step = 0
+    p_eff = 0
     # Phase 1: roll the policy in the (deterministic-sticky) env, snapshotting.
     while len(collected_states) < states:
         if step % snapshot_every == 0:
@@ -163,12 +164,14 @@ def dagger_collect(
             collected_states.append(ale.cloneSystemState())
         with torch.no_grad():
             action = int(policy(torch.from_numpy(np.asarray(obs)[None]).to(device)).item())
-        eff = _sticky_effective(action, action, step, 0.25)
+        eff = _sticky_effective(action, p_eff, step, 0.25)
         obs, _, terminated, truncated, _ = env.step(eff)
+        p_eff = eff
         step += 1
         if terminated or truncated:
             obs, _ = env.reset(seed=seed + step)
             step = 0
+            p_eff = 0
 
     # Phase 2: relabel each snapshot with the search expert.
     actions = []

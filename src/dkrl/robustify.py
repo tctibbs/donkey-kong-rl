@@ -198,7 +198,11 @@ class RestoreResetEnv(gym.Env):
         hi = max(lo + 1, int(self._hi * (n - 1)))
         entry = self.bank[int(self._rng.integers(lo, hi + 1)) % n]
         self._ale.restoreSystemState(pickle.loads(entry.state_blob))
-        obs, reward, terminated, truncated, info = self._env.step(0)
+        # Prime the 4-frame stack with post-restore frames: the reset above filled it with
+        # start-screen frames before the state was restored, so a single step would leave
+        # three stale frames in the returned observation.
+        for _ in range(4):
+            obs, _, _, _, info = self._env.step(0)
         return obs, info
 
     def step(self, action: int) -> tuple:
