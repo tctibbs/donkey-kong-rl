@@ -39,7 +39,10 @@ for exactly how agents are evaluated and what the headline numbers mean.
 
 A random policy scores about 122 and plain PPO about 4,027 (never clearing a screen). A long
 campaign of standard methods plateaued at a robust 7,285. The breakthrough was self-imitation
-learning from a permanent demonstration buffer: it lifted the evaluation mean to 11,293 and
-then, with a richer demo buffer and another round of training, to **22,820 (median 24,400,
-best single game 43,700), reaching the 30k range**. The full arc is in the
+learning from a permanent demonstration buffer, applied as repeated rounds of expert iteration:
+the evaluation mean climbed 11,293, then 22,820, and settled at a **3-seed mean of 32,420
+(IQM 34,033), with a best single game of 59,500**, about 4.6x the strongest no-demonstration
+agent. That is where the method tops out: pushing past ~30k reintroduces a training instability
+that collapses the policy, a ceiling documented in
+[experiment 11](../experiments/11-past-30k-and-the-sil-ceiling/writeup.md). The full arc is in the
 [experiments](../experiments/README.md).

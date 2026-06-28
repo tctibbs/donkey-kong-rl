@@ -8,11 +8,14 @@ run long, and it sits outside the usual Atari benchmark set, so there is not muc
 compare against. I wanted to see how far I could push it, keep everything reproducible,
 and leave an honest trail of what worked and what did not.
 
-![Trained Donkey Kong agent scoring 44,800 in a single closed-loop episode](assets/donkey_kong_44800_run.gif)
+<p align="center">
+  <img src="assets/donkey_kong_before_after.gif" alt="Left: an untrained agent farms the bottom of the first screen. Right: the trained agent climbs, clears, and loops the game.">
+</p>
 
-The trained policy under the stochastic evaluation protocol, looping both stages
-(barrels and rivets) for a 44,800-point run. Shown at 6x speed; the girders recolor
-each lap as the game ramps difficulty.
+Left, an untrained PPO agent stuck farming barrel jumps at the bottom (4,027 points, never
+climbs). Right, the trained self-imitation agent climbing, clearing, and looping both stages
+for a 44,600-point run (its best games reach 59,500). Both under the stochastic evaluation
+protocol, shown at 4x speed; the girders recolor each lap as the game ramps up.
 
 ## Results
 

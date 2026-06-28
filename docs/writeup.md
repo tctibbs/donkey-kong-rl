@@ -178,10 +178,11 @@ within sampling noise of the reported 5,269 / 0.93).
 
 - [ ] Fold in the self-imitation results. This write-up still stops at the
   6,884 final agent. Self-Imitation Learning from a permanent (non-evicting)
-  demonstration buffer broke the 7,285 closed-loop ceiling (mean 11,293), and
-  iterated SIL reached the 30k range (mean 22,820, median 24,400, max 43,700,
-  100 percent screen-1 clear). The "best agents reach about 20 percent of a
-  casual human" framing below is now out of date. See the 2026-06-14 journals.
+  demonstration buffer broke the 7,285 closed-loop ceiling, and iterated SIL
+  reached a 3-seed mean of 32,420 (IQM 34,033, max 59,500, 100 percent screen-1
+  clear) before hitting a training-stability ceiling at ~30k. The "best agents
+  reach about 20 percent of a casual human" framing below is now out of date.
+  The full account is in experiments/11-past-30k-and-the-sil-ceiling/.
 - [ ] Pick a human-normalized reference. No canonical DonkeyKong human baseline
   exists; community anchor is about 30,000 for a decent casual player.
 - [ ] Write up the limitations: scripted-demonstration kickstart assumes a
