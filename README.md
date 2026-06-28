@@ -1,5 +1,11 @@
 # Donkey Kong RL
 
+[![CI](https://github.com/tctibbs/donkey-kong-rl/actions/workflows/ci.yml/badge.svg)](https://github.com/tctibbs/donkey-kong-rl/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
 A personal experiment in how far I can get a reinforcement learning agent to play
 Atari Donkey Kong on one modest machine, and figuring out what actually makes a difference.
 
