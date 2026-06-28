@@ -23,7 +23,7 @@ speed; the girders recolor each lap as the game ramps up.
 Plain PPO farms 100-point barrel jumps and never climbs (mean 4,027, zero screen clears).
 A chain of self-imitation rounds takes a trained closed-loop policy to a **3-seed mean of
 32,420 (IQM 34,033), with a best episode of 59,500** under the stochastic protocol, about
-4.6x the strongest no-demonstration agent. That is where this method tops out: the same
+8x the strongest no-demonstration agent. That is where this method tops out: the same
 recipe collapses if pushed past ~30k, a training-stability ceiling documented in
 [experiment 11](experiments/11-past-30k-and-the-sil-ceiling/writeup.md).
 
@@ -83,8 +83,8 @@ independently of any tracking service.
 
 Each [ledger](results/ledger.jsonl) row records the exact config hash and git SHA. Check out
 that SHA, run the config under [`configs/`](configs) with the recorded seed, and scores should
-match within seed noise. Headline results use 3 to 5 seeds and report mean, standard deviation, and
-interquartile mean.
+match within seed noise. The headline result is pooled over three seeds and reported as mean,
+standard deviation, and IQM with bootstrap confidence intervals.
 
 ## Quality gates
 
@@ -104,8 +104,7 @@ CI runs the same gates on every push and pull request.
 - [`configs/`](configs) YAML experiment configs
 - [`experiments/`](experiments) the experiment series, one self-contained write-up per folder
 - [`results/`](results) results ledger (committed; small text)
-- [`journal/`](journal) raw lab notes, one lesson per file
-- [`docs/`](docs) intro, methodology, glossary, and [`adr/`](docs/adr) decision records
+- [`docs/`](docs) background, methodology, glossary, and [`adr/`](docs/adr) decision records
 
 ## License
 

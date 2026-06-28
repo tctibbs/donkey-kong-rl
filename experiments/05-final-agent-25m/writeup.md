@@ -1,6 +1,6 @@
 # Experiment 05: The 25M final agent
 
-> One-line takeaway: the production recipe (clip transform, two-screen sticky demos, BC init, auxiliary BC annealed to a 0.15 floor), trained to 25M steps across three seeds, pools to a mean of 6,884 with a 0.973 clear rate. It essentially solves the barrels screen and plays the rivets screen consistently.
+> The production recipe (clip transform, two-screen sticky demos, BC init, auxiliary BC annealed to a 0.15 floor), trained to 25M steps across three seeds, pools to a mean of 6,884 with a 0.973 clear rate. It essentially solves the barrels screen and plays the rivets screen consistently.
 
 After three phases of figuring out what actually moved the needle, I stopped tuning and committed. I took the single recipe that survived every ablation, scaled it to 25M steps, and ran three seeds so the headline number would carry a real confidence interval rather than a single lucky curve. This is the closed-loop policy the rest of the project is measured against.
 
@@ -79,10 +79,6 @@ This is a budget and demonstration limit, not a tuning failure. The demonstratio
 
 The production recipe, frozen and scaled to 25M steps across three seeds, pools to a mean of 6,884 (95% CI 6,724 to 7,027), IQM 7,071, with a 0.973 clear rate. The 25M horizon mattered: it converted the 10M recipe's bimodal coin-flip (around 5,174) into a reliable, single-moded policy that essentially solves the barrels screen. This is the closed-loop number the rest of the project is measured against.
 
-## What's next
-
-The ceiling here is sharp: the agent clears one screen reliably but never completes the second to loop the game, because its demonstrations never show a deeper game. So the next question is whether a discovery method can even find a deep path through Donkey Kong, independent of whether a reactive policy can reproduce it. That is where Go-Explore comes in: [experiment 06, Go-Explore finds a 30,100 path](../06-go-explore-discovery/writeup.md).
-
 ## Reproduce this
 
 ```bash
@@ -111,6 +107,5 @@ uv run dkrl video --checkpoint checkpoints/ppo_final_25m_s1_20260611_163526/fina
 ## References
 
 - The recipe this scales up: [04 - what actually mattered](../04-what-mattered/writeup.md)
-- The discovery result that defines the next push: [06 - Go-Explore finds a 30,100 path](../06-go-explore-discovery/writeup.md)
 - Evaluation protocol: [methodology note](../../docs/methodology.md)
 - Terms used above: [glossary](../../docs/glossary.md)

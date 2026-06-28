@@ -6,7 +6,7 @@ No em dashes anywhere.
 
 # Experiment 06: Go-Explore finds a 30,100-point path
 
-> One-line takeaway: a state-restore search discovered a verified 30,100-point Donkey Kong trajectory, far past anything a learned policy reaches, but that discovery is an open-loop replay, not a robust policy, and the gap between the two is the whole story.
+> A state-restore search discovered a verified 30,100-point Donkey Kong trajectory, far past anything a learned policy reaches, but that discovery is an open-loop replay, not a robust policy, and the gap between the two is the whole story.
 
 By the end of [experiment 05](../05-final-agent-25m/writeup.md) the production agent was a boring plateau: the 25M recipe over three seeds pooled to a mean around 6,884, reliably cleared the first screen, and stopped climbing. Every method I had tried converged near 7,000. Before I could teach an agent to go deeper, I needed proof that "deeper" even existed in this ROM. This experiment is where I went looking, and found a path worth 30,100 points.
 
@@ -100,10 +100,6 @@ The discovery should not be oversold. A 30,100 trajectory is not "the agent reac
 
 A state-restore search found a verified 30,100-point path, far past anything a learned policy reaches, but discovering a deep route and executing it under noise are two different problems. The roughly four-to-one gap between the 30,100 open-loop discovery and the 7,123 robust policy is not a rounding error or a tuning miss. It is the cost of robust reactive execution under stochasticity.
 
-## What's next
-
-With a 30,100 demonstration in hand, the open question is whether a different policy class can hold more of that depth under noise. The next experiment distills the Go-Explore agent into a recurrent (LSTM) policy, on the theory that memory across the screen transition might survive sticky actions better than a feedforward frame stack: [Recurrent policies and the closed-loop ceiling](../07-recurrent-policy/writeup.md).
-
 ## Reproduce this
 
 ```bash
@@ -130,4 +126,3 @@ uv run dkrl plot results/metrics/ppo_goexplore3_25m_s1_20260612_182543.csv \
 - Machado et al. 2018, evaluation protocol for the Arcade Learning Environment: https://arxiv.org/abs/1709.06009
 - The open-loop vs closed-loop distinction: [methodology note](../../docs/methodology.md)
 - Previous experiment: [05 - The 25M final agent](../05-final-agent-25m/writeup.md)
-- Next experiment: [07 - Recurrent policies](../07-recurrent-policy/writeup.md)

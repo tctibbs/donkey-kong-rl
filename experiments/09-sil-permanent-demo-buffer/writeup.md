@@ -5,7 +5,7 @@ score_distribution.png, gameplay.gif). Avoid em dashes (periods, commas, parenth
 
 # Experiment 09: Breaking the ceiling with a permanent demo buffer
 
-> One-line takeaway: parking three deep trajectories in a separate, non-evicting demo
+> Parking three deep trajectories in a separate, non-evicting demo
 > buffer and self-imitating from them on every update lifted the evaluation mean from
 > 7,285 to 11,293, the first closed-loop policy in the campaign to durably beat the wall.
 
@@ -155,16 +155,6 @@ return-weighted demonstration buffer, warm-started from the Go-Explore agent, tu
 7,285 policy into one averaging 11,293 with a closed-loop episode reaching the 30k range. The
 discovery-to-policy gap was a memory problem, not a capacity problem.
 
-## What's next
-
-The distribution points straight at the fix. The 48 percent low cluster dies at the screen
-transition because three open-loop demos are not enough *variety* of deep play to anchor on, and
-the Go-Explore trajectories are off the policy's own distribution. Would enriching the permanent
-buffer with many more deep trajectories, and continuing training from this checkpoint rather than
-starting over, close that cluster?
-
-Next: [Reaching the 30k range with iterated self-imitation](../10-iterated-sil-30k/writeup.md).
-
 ## Reproduce this
 
 ```bash
@@ -188,5 +178,4 @@ uv run dkrl video --checkpoint checkpoints/<run_id>/final.pt \
 - Self-Imitation Learning, Oh et al. 2018: https://arxiv.org/abs/1806.05635
 - Self-Imitation Learning from Demonstrations: https://arxiv.org/pdf/2203.10905
 - Previous experiment: [08 - the search-driven DAgger negative result](../08-search-dagger-negative/writeup.md)
-- Next experiment: [10 - reaching the 30k range with iterated self-imitation](../10-iterated-sil-30k/writeup.md)
 - The discovery result this builds on: [06 - Go-Explore finds a 30,100 path](../06-go-explore-discovery/writeup.md)

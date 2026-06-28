@@ -1,6 +1,6 @@
 # Experiment 02: Why standard exploration fails on Donkey Kong
 
-> One-line takeaway: when the barrier is a long, zero-reward, death-risky action chain, generic exploration (reward scaling, a longer horizon, RND, more entropy, no sticky actions, a smaller action set) buys you nothing. Every arm farms barrel jumps and clears zero screens.
+> When the barrier is a long, zero-reward, death-risky action chain, generic exploration (reward scaling, a longer horizon, RND, more entropy, no sticky actions, a smaller action set) buys you nothing. Every arm farms barrel jumps and clears zero screens.
 
 In [experiment 01](../01-ppo-baseline/writeup.md) a plain [PPO](../../docs/glossary.md) agent learned fast and reliably to stand near the bottom ramp and jump barrels for 100 points each, settling around 4,027 with a screen-1 clear rate of exactly 0.00. It never climbed. The textbook next move: the agent is not exploring enough, so turn up exploration. Here I turned every standard exploration knob I had, one at a time, and watched all of them fail the same way.
 
@@ -58,7 +58,7 @@ Evaluation is 100 episodes under the full stochastic protocol (sticky actions p=
 | ppo_nosticky | 3,881 | 654 | 4,200 | 4,400 | 0.00 | ppo_nosticky_10m_s1_20260611_063058 |
 | ppo_minactions | 4,079 | 416 | 4,200 | 4,600 | 0.00 | ppo_minactions_10m_s1_20260611_070301 |
 
-ppo_scale is reported as "= baseline" because it is bit-identical and shares the baseline's evaluation; see [the E1 journal note](../../journal/2026-06-10-e1-reward-scale-noop.md). A telling detail from the eval logs: in every arm the largest single-step reward across all 100 episodes was 100.0. Not one hammer (800), not one screen bonus (1,500+). The agents never touched anything but barrel jumps.
+ppo_scale is reported as "= baseline" because it is bit-identical and shares the baseline's evaluation. A telling detail from the eval logs: in every arm the largest single-step reward across all 100 episodes was 100.0. Not one hammer (800), not one screen bonus (1,500+). The agents never touched anything but barrel jumps.
 
 The training curves tell the same story. Every arm climbs to the farming plateau in the first 2 to 4M steps and then flattens. None pulls away upward, because there is no second reward regime to pull toward.
 
@@ -77,12 +77,6 @@ Limits worth stating plainly. Each arm is a single seed, so small differences be
 ## Takeaway
 
 When the barrier is a long, zero-reward, death-risky action chain, generic exploration does not help. Reward scaling was a literal no-op, a longer horizon stayed in the farming basin, and RND and extra entropy actively cost score. None of the six arms cleared a single screen. The problem is discovery of a specific behavior, not the amount of noise in the policy.
-
-## What's next
-
-If the agent cannot discover the climb on its own, the next move is to *show* it the climb. Experiment 03 drops the exploration framing and kickstarts the policy from demonstrations, holding the demonstrated behavior in place with an auxiliary loss while PPO improves execution.
-
-Next: [Demonstration kickstarting breaks the first screen](../03-demonstration-kickstart/writeup.md).
 
 ## Reproduce this
 
@@ -113,6 +107,4 @@ uv run dkrl plot \
 - Random Network Distillation, Burda et al. 2018: https://arxiv.org/abs/1810.12894
 - On bonus-based exploration not being a free win, Taiga et al. 2020: https://arxiv.org/abs/1908.02388
 - Machado et al. 2018 evaluation protocol: https://arxiv.org/abs/1709.06009
-- The reward-scaling no-op finding: [E1 journal](../../journal/2026-06-10-e1-reward-scale-noop.md)
 - Previous experiment: [The PPO baseline that never climbs](../01-ppo-baseline/writeup.md)
-- Next experiment: [Demonstration kickstarting breaks the first screen](../03-demonstration-kickstart/writeup.md)

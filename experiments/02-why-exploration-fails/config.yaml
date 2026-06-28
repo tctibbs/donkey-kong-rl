@@ -1,5 +1,5 @@
-# E3: RND exploration on top of the scale transform (ADR 0003 contingency,
-# activated by the E1 no-op finding: the agent must DISCOVER its first screen
+# E3: RND exploration on top of the scale transform (activated by the
+# E1 no-op finding: the agent must DISCOVER its first screen
 # clear before any reward transform can matter). Single delta vs E1: +RND.
 name: ppo_rnd_10m
 seed: 1

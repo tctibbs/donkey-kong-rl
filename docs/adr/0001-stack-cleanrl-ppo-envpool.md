@@ -1,7 +1,5 @@
 # ADR 0001: CleanRL-style PPO on EnvPool as the base stack
 
-Status: accepted. Date: 2026-06-10.
-
 ## Context
 
 The project needs a reproducible, hackable, single-GPU pipeline for

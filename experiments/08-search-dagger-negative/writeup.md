@@ -5,7 +5,7 @@ Avoid em dashes (use periods, commas, or parentheses).
 
 # Experiment 08: Search-based DAgger, and why it failed
 
-> One-line takeaway: DAgger only helps when the expert beats the policy, and a per-state search expert cheap enough to relabel thousands of states is too myopic to beat a 7k policy, so its labels actively dragged the agent down to 3,638.
+> DAgger only helps when the expert beats the policy, and a per-state search expert cheap enough to relabel thousands of states is too myopic to beat a 7k policy, so its labels actively dragged the agent down to 3,638.
 
 By this point the agent had a repeatable problem. A Go-Explore search had *found* a 30,100-point path through the game ([experiment 06](../06-go-explore-discovery/writeup.md)), and a robust kickstarted policy reliably cleared the first screen, yet every closed-loop method converged near 7,285. The next idea was DAgger: instead of cloning a fixed demonstration set, let the agent play, then relabel the states it actually visits with what a search expert thinks it should have done. It did not work, and the way it failed is the point of this writeup.
 
@@ -13,7 +13,7 @@ By this point the agent had a repeatable problem. A Go-Explore search had *found
 
 The earlier behavior-cloning and kickstart attempts share a weakness called covariate shift: the demonstrations cover states the *demonstrator* visited, not the states the *agent* drifts into once it starts playing. DAgger is the standard fix. You run the current policy, collect the states it visits, ask an expert for the correct action at each, train on those corrected labels, and repeat. The states being labeled are exactly the ones the agent gets wrong in the wild.
 
-The catch is where the expert comes from. With no human teacher in the loop, I built one from search: at each visited state, run a short random-shooting lookahead and return the first action of the best-scoring rollout. The hypothesis was that this per-state search could act as a cheap local expert. The risk, which [ADR 0005](../../docs/adr/0005-search-dagger-robust-deep-play.md) flagged up front, was that a per-state search might be too short-sighted to beat the already-strong policy. This experiment is where I found out which it was.
+The catch is where the expert comes from. With no human teacher in the loop, I built one from search: at each visited state, run a short random-shooting lookahead and return the first action of the best-scoring rollout. The hypothesis was that this per-state search could act as a cheap local expert. The obvious risk was that a per-state search might be too short-sighted to beat the already-strong policy. This experiment is where I found out which it was.
 
 ## Method
 
@@ -91,10 +91,6 @@ Both rounds are single seed, so neither score is a rigorous point estimate. But 
 
 DAgger needs an expert that beats the policy, and that is hard to build without a human. A per-state search cheap enough to relabel thousands of states is too myopic and noisy to beat an already-strong policy (its labels are mutually inconsistent, BC accuracy 0.282), and a per-state search strong enough to beat the policy costs about as much as the original problem. The expert-quality barrier is the same wall as the control problem itself. This is the lesson I keep the experiment for.
 
-## What's next
-
-If I cannot manufacture a better expert by search, the productive move is to stop importing correction from outside and instead amplify the good play the agent *already produces* on its own. That is self-imitation: replay the agent's own above-expectation episodes and learn to repeat them, with the deep demonstrations pinned permanently in the buffer so they cannot wash out. That is [experiment 09: breaking the ceiling with a permanent demo buffer](../09-sil-permanent-demo-buffer/writeup.md).
-
 ## Reproduce this
 
 ```bash
@@ -123,7 +119,5 @@ uv run dkrl plot results/metrics/ppo_dagger_r1_15m_s1_20260613_134841.csv \
 
 - DAgger (A Reduction of Imitation Learning), Ross et al. 2011: https://arxiv.org/abs/1011.0686
 - Behavior cloning and covariate shift, defined in [the glossary](../../docs/glossary.md)
-- Design rationale and the up-front myopia risk: [ADR 0005](../../docs/adr/0005-search-dagger-robust-deep-play.md)
 - Previous experiment: [07 - a recurrent policy](../07-recurrent-policy/writeup.md)
-- Next experiment: [09 - breaking the ceiling with a permanent demo buffer](../09-sil-permanent-demo-buffer/writeup.md)
 - The discovery result the search expert was modeled on: [06 - Go-Explore finds a 30,100 path](../06-go-explore-discovery/writeup.md)

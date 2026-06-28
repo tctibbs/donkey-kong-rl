@@ -1,6 +1,6 @@
 # Experiment 11: Past 30k, and the ceiling of iterated self-imitation
 
-> One-line takeaway: one more round of iteration lifted the mean into the low-30,000s
+> One more round of iteration lifted the mean into the low-30,000s
 > (3-seed IQM 34,033, pooled mean 32,420, with a 59,500 single-episode max, so 50k is
 > reachable in one game), but six attempts to push the mean any further all collapsed.
 > About 30k is a hard ceiling for this method.
@@ -70,8 +70,8 @@ training curve climbs steadily and holds, with no collapse:
 
 ![Round 3 learning curve](./figures/round3_learning_curve.png)
 
-The single best game scored **59,200**, so 50k is clearly reachable in one episode; the score
-distribution shows the typical game is now genuinely deep (median 34,050) with a thick tail
+The single best game scored **59,500**, so 50k is clearly reachable in one episode; the score
+distribution shows the typical game is now genuinely deep (median 34,700) with a thick tail
 toward 50k, against a stubborn low cluster that dies early:
 
 ![Round 3 score distribution](./figures/round3_score_distribution.png)
@@ -108,7 +108,7 @@ policy downward faster than the fixed demos can anchor it. Round 9 tested that d
 KL trust region to forbid large policy shifts, and it held longest and peaked highest (34,485),
 but the drift accumulates across many small in-budget steps and it collapsed anyway.
 
-So the limit is not capacity (the same network scores 59,200 in a single game) and not the game
+So the limit is not capacity (the same network scores 59,500 in a single game) and not the game
 (50k is reachable). It is the training procedure: iterated self-imitation past ~30k is unstable,
 and gentle learning rates, strong anchors, pure-demo imitation, and trust regions all delay the
 collapse without preventing it. About 30k is where stable closed-loop play tops out for this
@@ -136,13 +136,6 @@ the old 7,285 ceiling to a 3-seed IQM of 34,033 (pooled mean 32,420), more than 
 game of 59,500. But it has a ceiling of its own around 30k, set by training instability rather
 than capacity or the game. A 50k mean is out of reach for this method on this setup; it would
 need a fundamentally different paradigm.
-
-## What's next
-
-1. **A different paradigm for a higher mean.** The instability is in the policy-gradient
-   continuation, so the candidates are model-based control (MuZero-style planning, which does not
-   rely on this kind of continuation) or a dedicated training-stability effort. Both are large,
-   multi-week undertakings rather than another overnight run.
 
 ## Reproduce this
 

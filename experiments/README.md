@@ -2,8 +2,7 @@
 
 The project as a series, one experiment per folder, in order. Each folder is a
 self-contained article: the write-up, the exact `config.yaml`, the headline `results.csv`,
-and the `figures/` it embeds. Clone [`_TEMPLATE/`](_TEMPLATE/writeup.md) to add one.
-Experiments 02 and 08 are negative results, kept because the dead ends are half the lesson.
+and the `figures/` it embeds. To add one, copy an existing folder and follow its shape.
 
 | # | Experiment | Takeaway |
 |---|------------|----------|
@@ -18,6 +17,3 @@ Experiments 02 and 08 are negative results, kept because the dead ends are half 
 | 09 | [Breaking the ceiling with a permanent demo buffer](09-sil-permanent-demo-buffer/writeup.md) | Self-imitation from a non-evicting demo buffer lifts the mean from 7,285 to 11,293, the first real crack in the ceiling. |
 | 10 | [Reaching the 30k range with iterated SIL](10-iterated-sil-30k/writeup.md) | Continuing from experiment 9 with a richer 13-trajectory deep-demo buffer reaches mean 22,820, median 24,400, max 43,700. The 30k range, by a trained policy. |
 | 11 | [Past 30k, and the iterated-SIL ceiling](11-past-30k-and-the-sil-ceiling/writeup.md) | One more round lifts the result to a 3-seed IQM of 34,033 (pooled mean 32,420, max 59,500, so 50k is reachable in one game), but six attempts to push further all collapse. About 30k is a hard ceiling for this method, set by training instability. |
-
-Raw lab notes behind these articles live in [`../journal/`](../journal); shared background
-(the game, the evaluation protocol, the algorithms) is in [`../docs/`](../docs).

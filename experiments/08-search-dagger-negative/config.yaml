@@ -1,4 +1,4 @@
-# Search-DAgger round 2 (ADR 0005): DAgger-DOMINANT training. Round 1 was
+# Search-DAgger round 2: DAgger-DOMINANT training. Round 1 was
 # inconclusive because the search labels were only 1.1% of the data (drowned
 # by 96k robust-demo samples); the 5,990 was within kickstart seed variance.
 # Here the demo set is ~3,000 search-relabeled states plus a smaller robust

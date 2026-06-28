@@ -1,15 +1,16 @@
-# CLAUDE.md
+# Agent instructions
 
-Persistent rules for this repository. These survive across sessions and override defaults.
+Persistent rules for working in this repository, for any AI coding agent. This file
+(`AGENTS.md`) is the single source of truth; Claude Code reads it through the
+`.claude/CLAUDE.md` symlink.
 
 ## Project
 
 A personal project studying how far one modest machine (an old GPU, 12 CPU cores, with
 CPU-bound Atari stepping as the real throughput limit) can push `ALE/DonkeyKong-v5`, and
-which design choices drive the results. I keep a reproducible experiment suite and a
-running write-up of what mattered (`docs/writeup.md`); turning that into a white paper is
-a personal goal kept in my own notes, not the focus of the repo. Treat "I can learn what
-mattered" as a first-class requirement, equal to raw score.
+which design choices drive the results. I keep a reproducible experiment suite, written up
+as a self-contained series under `experiments/`. Treat "I can learn what mattered"
+as a first-class requirement, equal to raw score.
 
 ## Commit rules
 
@@ -20,7 +21,7 @@ mattered" as a first-class requirement, equal to raw score.
 - NEVER include AI attribution: no Co-Authored-By trailers, no "Generated with" lines.
   `.claude/settings.json` enforces this; do not remove it.
 - Commit messages describe code changes, never run metrics. Results belong in
-  `results/ledger.jsonl` and `journal/`.
+  `results/ledger.jsonl` and the experiment write-ups.
 - Work on short-lived feature branches, merge to `main` via PR with a
   conventional-commit title. Tag milestones.
 
@@ -54,10 +55,9 @@ The repo must always be ready to flip public with zero cleanup:
 - Experiment write-ups under `experiments/NN-slug/writeup.md`: one experiment per folder,
   co-located with its `config.yaml`, `results.csv`, and `figures/`. One-line takeaway at the
   top, in the natural article voice of the existing folders. Add new ones to the
-  `experiments/README.md` index, and clone `experiments/_TEMPLATE/` for the structure.
-- Raw, dated lab notes stay under `journal/` (one lesson per file); the polished articles in
-  `experiments/` are built from them. Cross-cutting prose (intro, methodology, glossary) lives
-  in `docs/`.
+  `experiments/README.md` index. The `writing-experiment-reports` skill carries the template
+  and the house conventions.
+- Cross-cutting prose (background, methodology, glossary) lives in `docs/`.
 - Design decisions as ADRs under `docs/adr/`.
 - Read these before repeating work. Update rather than duplicate. Delete wrong notes.
 

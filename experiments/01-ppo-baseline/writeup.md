@@ -5,7 +5,7 @@ Figures live in ./figures/ (learning_curve.png, gameplay.gif). No em dashes.
 
 # Experiment 01: The PPO baseline that never climbs
 
-> One-line takeaway: a plain PPO agent trained for 10M steps scores about 4,027, which is 33 times the random baseline, yet it clears the first screen in 0 of 100 episodes because it has found a way to farm 100-point barrel jumps forever and never has to climb.
+> A plain PPO agent trained for 10M steps scores about 4,027, which is 33 times the random baseline, yet it clears the first screen in 0 of 100 episodes because it has found a way to farm 100-point barrel jumps forever and never has to climb.
 
 Donkey Kong is a climbing game: Mario starts at the bottom of a girder maze and the point is to reach the top. So I trained a textbook PPO agent for 10 million steps to see whether it would climb. It did not. It learned to stand at the bottom ramp and jump barrels for 100 points each until the bonus timer runs out and kills it, on every single episode. This experiment pins that failure down precisely.
 
@@ -80,7 +80,7 @@ For sanity, the same pipeline on Breakout (3M steps, environment id swapped, sti
 
 ## Discussion
 
-This negative result is the most useful one so far. A score of 4,027 tempts you to call it a win, but the clear-rate metric makes the failure unambiguous: the agent has not learned to play Donkey Kong, it has learned to exploit the one part that pays out without risk.
+A score of 4,027 tempts you to call it a win, but the clear-rate metric makes the failure unambiguous: the agent has not learned to play Donkey Kong, it has learned to exploit the one part that pays out without risk.
 
 Why does PPO settle here? Climbing means abandoning a reliable 100-point income stream for a long chain of zero-reward actions that frequently ends in death, in exchange for a 5,000-point bonus the agent has never experienced. Discounting makes it worse: gamma 0.99 shrinks a reward hundreds of steps in the future to almost nothing, so even a partial ladder climb is barely rewarded. The barrel-farming policy is a genuine local optimum, and entropy-based exploration (ent_coef 0.01) is nowhere near enough pressure to escape it.
 
@@ -91,10 +91,6 @@ The practical consequence is that raw score is a misleading headline for this ga
 ## Takeaway
 
 A textbook PPO agent on Donkey Kong does not climb. It finds a 100-point barrel-farming local optimum, scores 33 times random, and clears the first screen exactly zero times. The wall is not that the agent is weak, it is that the easy reward is right there at the bottom and the real reward is a long, risky climb away. Establishing that, and choosing clear rate over raw score, is what makes the rest of this project legible.
-
-## What's next
-
-If plain reward-seeking lands in a farming optimum, the obvious first lever is to make exploration push the agent up the ladders. The next experiment adds intrinsic motivation and tries longer horizons, to test whether better exploration alone can get Mario to climb: [02 - why exploration alone fails](../02-why-exploration-fails/writeup.md).
 
 ## Reproduce this
 
@@ -121,4 +117,3 @@ uv run dkrl train --config experiments/01-ppo-baseline/config.yaml \
 - Proximal Policy Optimization, Schulman et al. 2017: https://arxiv.org/abs/1707.06347
 - CleanRL `ppo_atari_envpool` (the baseline hyperparameters): https://docs.cleanrl.dev/rl-algorithms/ppo/
 - Revisiting the ALE, Machado et al. 2018 (sticky actions, evaluation protocol): https://arxiv.org/abs/1709.06009
-- Next experiment: [02 - why exploration alone fails](../02-why-exploration-fails/writeup.md)

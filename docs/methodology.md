@@ -42,7 +42,9 @@ Unless stated otherwise, an evaluation is **100 episodes at a fixed protocol see
   deterministically, as in Go-Explore) is not the same as a robust policy that scores under
   sticky actions. The repo always reports these separately. The gap between them is a real,
   measured quantity, not a rounding error.
-- **Seeds.** A single-seed result is preliminary. Headline claims use 3 to 5 seeds and report
-  mean, standard deviation, and IQM. Where a result is still single-seed, the write-up says so.
+- **Seeds.** The final headline is reported over three seeds, pooled as mean, standard
+  deviation, and IQM with bootstrap confidence intervals. The intermediate milestones along the
+  way are single-seed: enough to establish a direction, not enough to call a number
+  publication-grade, and each is flagged as single-seed where it appears.
 - **Reproducibility.** Every run appends a row to `results/ledger.jsonl` keyed by config hash
   and git SHA, so any number here can be traced to the exact code and config that produced it.

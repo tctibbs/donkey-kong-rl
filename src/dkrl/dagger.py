@@ -1,5 +1,5 @@
 """Search-based DAgger: relabel the policy's own visited states with a
-Go-Explore search expert (ADR 0005).
+Go-Explore search expert.
 
 One round: roll the current policy in the stochastic env, snapshot emulator
 states along the way, then from each snapshot run a short archive-based search

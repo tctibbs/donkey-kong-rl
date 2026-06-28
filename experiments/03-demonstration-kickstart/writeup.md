@@ -1,11 +1,11 @@
 <!--
-Experiment write-up: demonstration kickstarting. Every number traces to the
-journal entries of 2026-06-11 and results/ledger.jsonl. No em dashes.
+Experiment write-up: demonstration kickstarting. Every number traces to
+results/ledger.jsonl. No em dashes.
 -->
 
 # Experiment 03: Demonstration kickstarting breaks the first screen
 
-> One-line takeaway: behavior cloning alone collapses, an annealed BC auxiliary loss buys the first clears but loses them when it fades, and a permanent BC floor plus two-screen demonstrations holds the climbing habit in place to reach mean 5,269 with a 0.93 clear rate.
+> Behavior cloning alone collapses, an annealed BC auxiliary loss buys the first clears but loses them when it fades, and a permanent BC floor plus two-screen demonstrations holds the climbing habit in place to reach mean 5,269 with a 0.93 clear rate.
 
 [Experiment 02](../02-why-exploration-fails/writeup.md) ended in the farming basin: every exploration trick converged to an agent that jumps barrels at the bottom of the first screen for about 4,000 points and never climbs. A 4,200-point bonus sits at the top, but on-policy learning could not find a path to it. So I stopped asking the agent to discover the climb and started showing it, and the first screen finally fell.
 
@@ -106,10 +106,6 @@ A few limits. These are single-seed runs, so the 5,269 headline needs replicatio
 
 Behavior cloning alone collapses, an annealed BC auxiliary loss buys the first clears but loses them when it fades, and a permanent BC floor plus two-screen demonstrations holds the climbing habit in place to reach mean 5,269 with a 0.93 clear rate. The difference was not stronger imitation but keeping a small permanent pull toward demonstrated behavior, applied to demonstrations valuable enough to be worth defending.
 
-## What's next
-
-Four arms differed in exactly one knob each, plus a baseline family from earlier experiments, all under the same protocol. Which design choices actually drove the result, and which were along for the ride? [Experiment 04](../04-what-mattered/writeup.md) ablates the pieces to separate the load-bearing decisions from the decorative ones.
-
 ## Reproduce this
 
 ```bash
@@ -135,4 +131,3 @@ uv run dkrl video --checkpoint checkpoints/<run_id>/final.pt \
 
 - Kickstarting Deep Reinforcement Learning, Schmitt et al. 2018: https://arxiv.org/abs/1803.03835
 - Previous experiment: [02 - why exploration fails](../02-why-exploration-fails/writeup.md)
-- Next experiment: [04 - what mattered](../04-what-mattered/writeup.md)

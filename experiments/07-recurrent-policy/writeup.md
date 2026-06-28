@@ -5,7 +5,7 @@ Avoid em dashes.
 
 # Experiment 07: Recurrent policies and the closed-loop ceiling
 
-> One-line takeaway: an LSTM policy distilled online from the Go-Explore agent reaches mean 7,285 with a perfect clear rate, the best robust closed-loop policy so far, and even giving the network memory does not push past the wall.
+> An LSTM policy distilled online from the Go-Explore agent reaches mean 7,285 with a perfect clear rate, the best robust closed-loop policy so far, and even giving the network memory does not push past the wall.
 
 Experiment 6 gave me a Go-Explore search that could *find* a 30,100-point path through Donkey Kong, but the best policy that could actually *play* the game under live, stochastic control sat at mean 7,123 (the GE3 demonstration-kickstarted agent). The next suspect was architecture. Maybe a feedforward CNN that only sees four stacked frames cannot remember enough to play the rivets screen well. So I gave the policy memory. This is the story of building that LSTM correctly (it took three tries) and what it told me about the ceiling.
 
@@ -86,10 +86,6 @@ Limits: this is a single seed. The headline (7,285) is within seed noise of the 
 
 An LSTM distilled online from the Go-Explore agent reaches mean 7,285 with a 1.00 clear rate, the best robust closed-loop policy so far. Online teacher distillation worked where single-frame behavior cloning and offline distillation both failed. The more important result is what it ruled out: across roughly eight to ten method classes, the closed-loop stochastic ceiling holds at about 7,300, and even an architecture change with explicit memory does not move it. The wall is not observability.
 
-## What's next
-
-If memory does not break the ceiling, maybe the policy can teach itself by relabeling its own visited states with a search expert. The next experiment chases that idea, search-based DAgger: [08 - search-based DAgger and the limits of a myopic expert](../08-search-dagger-negative/writeup.md).
-
 ## Reproduce this
 
 ```bash
@@ -110,4 +106,3 @@ uv run dkrl video --checkpoint checkpoints/<run_id>/final.pt \
 
 - Kickstarting Deep Reinforcement Learning, Schmitt et al. 2018: https://arxiv.org/abs/1803.03835
 - The discovery this builds on: [06 - Go-Explore finds a 30,100 path](../06-go-explore-discovery/writeup.md)
-- The next dead end: [08 - search-based DAgger negative result](../08-search-dagger-negative/writeup.md)

@@ -1,12 +1,12 @@
 # Experiment 04: What actually mattered (ablations)
 
-> One-line takeaway: of all the moving parts in the kickstarting recipe, the permanent BC pressure floor is the one load-bearing piece. Remove it and clears collapse to zero. The reward transform I had fought over for two experiments turns out not to matter at all once behavior is demonstrated.
+> Of all the moving parts in the kickstarting recipe, the permanent BC pressure floor is the one load-bearing piece. Remove it and clears collapse to zero. The reward transform I had fought over for two experiments turns out not to matter at all once behavior is demonstrated.
 
 In experiment 03 I got the agent to clear the first screen reliably by kickstarting PPO with two-screen demonstrations and a behavior-cloning auxiliary loss. But the recipe had a lot of knobs: which demos, a warm-start BC phase, an annealed auxiliary coefficient with a permanent floor, and a reward transform. "It works" is not "I know why it works." This experiment turns each knob one at a time, against the same reference recipe, to find which pieces carry the result and which are along for the ride.
 
 ## The question
 
-I had a recipe that clears, but could not have told you which ingredient mattered. The repo treats "I can learn what mattered" as a first-class goal, equal to raw score, so a working recipe with no understanding is half the job. My suspicion: one or two components were doing all the work and the rest was superstition I had accreted while flailing. In particular, did the reward transform I spent [experiment 02](../02-why-exploration-fails/writeup.md) and a whole ADR arguing about still matter now that the agent was being shown good play, or had demonstrations made that argument moot? The clean way to find out is one-variable-at-a-time ablation: hold the reference recipe fixed, change exactly one thing, read the delta.
+Now that the agent was being shown good play, did the reward transform I had argued over across [experiment 02](../02-why-exploration-fails/writeup.md) and the experiments after it still matter, or had the demonstrations made that whole argument moot? That was the question I most wanted settled. I had a recipe that clears and could not have told you which ingredient earned it, and a recipe I cannot explain is half a result. My suspicion was that one or two components did all the work and the rest was superstition I had accreted while flailing. The clean way to check was one-variable-at-a-time ablation: hold the reference recipe fixed, change exactly one thing, read the delta.
 
 ## Method
 
@@ -83,10 +83,6 @@ Limits. The single-variable arms (floor 0.0/0.05/0.3, anneal 100, no init) are s
 
 Exactly one piece of the kickstarting recipe is load-bearing: the permanent behavior-cloning floor. Set it to zero and the agent forgets how to clear and goes back to farming (clear rate 0.00); set it near 0.15 and the behavior holds. The reward transform I argued about for two experiments is, once behavior is demonstrated, within seed noise (clip 5,174 vs scale 4,915 mean of means). Warm-start and long anneal help a little and are otherwise optional. Knowing which knob matters is worth as much here as the score it produces.
 
-## What's next
-
-The floor is the one piece I cannot drop, and clip is as good as scale (and simpler and more standard), so I can lock the recipe and stop tuning. Does it hold up when scaled? The next experiment runs this exact recipe as the production agent at 25M steps over multiple seeds, built on `ppo_abl_clip`: [The 25M final agent](../05-final-agent-25m/writeup.md).
-
 ## Reproduce this
 
 ```bash
@@ -115,4 +111,3 @@ uv run dkrl plot-compare --runs <run_id_1> <run_id_2> ... \
 - Kickstarting RL agents, Schmitt et al. 2018: https://arxiv.org/abs/1803.03835
 - The Arcade Learning Environment evaluation protocol, Machado et al. 2018: https://arxiv.org/abs/1709.06009
 - Previous experiment: [03 - kickstarting PPO with demonstrations](../03-demonstration-kickstart/writeup.md)
-- Next experiment: [05 - the final agent at 25M steps](../05-final-agent-25m/writeup.md)

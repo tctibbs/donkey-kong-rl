@@ -147,7 +147,7 @@ class RobustifyConfig(BaseModel):
 
 
 class BCConfig(BaseModel):
-    """Behavior-cloning warm-start from scripted demonstrations (ADR 0004)."""
+    """Behavior-cloning warm-start from scripted demonstrations."""
 
     enabled: bool = False
     demo_path: str = "data/demos_screen1.npz"

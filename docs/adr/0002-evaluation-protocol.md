@@ -1,7 +1,5 @@
 # ADR 0002: Machado et al. evaluation protocol, also applied to training
 
-Status: accepted. Date: 2026-06-10.
-
 ## Context
 
 `DonkeyKong-v5` has no published benchmark to compare against, so the

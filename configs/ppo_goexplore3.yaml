@@ -1,7 +1,7 @@
 # GE3: perturbation-robust demos. Explored under deterministic hash-sticky
 # 0.25 through the exact training stack, replay-validated with zero
 # mismatches. Tests whether robustness (not depth) breaks the 7k transfer
-# ceiling documented in journal/2026-06-12-30k-campaign-status.md.
+# ceiling documented across the closed-loop experiments.
 name: ppo_goexplore3_25m
 seed: 1
 total_timesteps: 25000000

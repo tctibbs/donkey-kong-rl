@@ -1,4 +1,4 @@
-"""Behavior-cloning warm-start from scripted demonstrations (ADR 0004)."""
+"""Behavior-cloning warm-start from scripted demonstrations."""
 
 from pathlib import Path
 

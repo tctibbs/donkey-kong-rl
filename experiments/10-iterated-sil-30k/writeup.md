@@ -1,6 +1,6 @@
 # Experiment 10: Reaching the 30k range with iterated self-imitation
 
-> One-line takeaway: keeping a permanent buffer of the agent's deepest play inside the
+> Keeping a permanent buffer of the agent's deepest play inside the
 > on-policy loop, and feeding it richer deep demonstrations each round, turned a policy
 > stuck at 7,285 into one that averages 22,820 and reaches the 30k range.
 
@@ -131,17 +131,6 @@ Keep your best experience live inside the learner. Self-imitation from a permane
 return-weighted demonstration buffer, enriched each round with more diverse deep play and
 warm-started from the previous round's agent, converted a stuck 7,285 policy into one that
 reaches the 30k range. The discovery-to-policy gap was a memory problem, not a capacity problem.
-
-## What's next
-
-Three threads, in order of expected payoff:
-
-1. **Multi-seed this recipe** for a rigorous interquartile-mean headline (the immediate next step).
-2. **Iterate again on the agent's own play.** This policy produces 40k-plus episodes under live
-   control. Those are on-distribution and deeper than the Go-Explore demos that seeded it, so
-   feeding them back as the next round's permanent buffer should attack the early-death cluster.
-3. **Recurrent self-imitation.** An LSTM policy would carry memory across the screen transition
-   where the low cluster dies, which feedforward frame-stacking cannot.
 
 ## Reproduce this
 

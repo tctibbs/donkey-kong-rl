@@ -99,9 +99,7 @@ def main() -> None:
     p_rep.add_argument("--min-score", type=float, default=6000.0)
     p_rep.add_argument("--merge-with", type=Path, default=None)
 
-    p_dag = sub.add_parser(
-        "dagger-collect", help="Relabel policy-visited states via search (ADR 0005)"
-    )
+    p_dag = sub.add_parser("dagger-collect", help="Relabel policy-visited states via search")
     p_dag.add_argument("--checkpoint", type=Path, required=True)
     p_dag.add_argument("--out", type=Path, required=True)
     p_dag.add_argument("--states", type=int, default=120)
